@@ -1,0 +1,29 @@
+.content-blue-button {
+  background-color: var(--moneyblue, #4068ff);
+  color: var(--bgwhite, #fcfcfc);
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 40px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.3s ease, visibility 0.3s ease;
+  white-space: nowrap;
+  height: 49px;
+  min-height: 49px;
+}
+
+.content-blue-button:hover:not(:disabled) {
+  background-color: #3050e0;
+  transform: translateY(-1px);
+}
+
+.content-blue-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.content-blue-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

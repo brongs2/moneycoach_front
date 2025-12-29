@@ -1,0 +1,65 @@
+.amount-input-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.amount-input-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--subtitlegray, #bcbcbc);
+  height: 32px;
+}
+
+.amount-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--subtitlegray, #bcbcbc);
+  background: transparent;
+  padding: 0;
+}
+
+.amount-unit {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--subtitlegray, #bcbcbc);
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.amount-buttons {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.amount-button {
+  flex: 1;
+  height: 32px;
+  background-color: var(--bgwhite, #fcfcfc);
+  border: 1px solid var(--subtitlegray, #bcbcbc);
+  border-radius: 8px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--black, #333);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.amount-button:hover {
+  background-color: var(--lightgray, #f1f1f1);
+  border-color: var(--moneyblue, #4068ff);
+}
+
+.amount-button:active {
+  transform: scale(0.98);
+}
+

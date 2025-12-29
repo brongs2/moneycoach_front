@@ -1,0 +1,27 @@
+.title {
+  width: 100%;
+}
+
+.title-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.title-main {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--black, #333);
+  width: 100%;
+}
+
+.title-subtitle {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--subtitlegray, #bcbcbc);
+  width: 100%;
+}

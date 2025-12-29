@@ -1,0 +1,235 @@
+.my-asset-page {
+  background-color: var(--lightgray, #f1f1f1);
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-container {
+  width: 100%;
+  max-width: 393px;
+  height: 100vh;
+  max-height: 852px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: var(--lightgray, #f1f1f1);
+}
+
+.setup-header {
+  width: 100%;
+  height: 61px;
+  flex-shrink: 0;
+}
+
+.setup-back-button {
+  width: 100%;
+  height: 24px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.my-asset-header {
+  width: 100%;
+  background-color: var(--moneyblue, #4068ff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 32px 0;
+  gap: 32px;
+  flex-shrink: 0;
+}
+
+.my-asset-bottom-section {
+  width: 100%;
+  position: absolute;
+  bottom: 145px; /* NavigationBar(86px) + Button(49px) + margin(10px) */
+  left: 0;
+  right: 0;
+  max-height: 466px; /* Figma의 Frame 58 높이 (403부터 시작, 466px 높이) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  gap: 24px;
+  overflow-y: auto;
+  background-color: var(--lightgray, #f1f1f1);
+  -webkit-overflow-scrolling: touch;
+}
+
+.my-asset-top {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+  flex-shrink: 0;
+}
+
+.my-asset-title {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.my-asset-title .title-main {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--bgwhite, #fcfcfc);
+  width: 100%;
+  margin: 0;
+}
+
+.my-asset-title .title-subtitle {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--bgwhite, #fcfcfc);
+  width: 100%;
+  margin: 0;
+}
+
+.my-asset-title .title-subtitle p {
+  margin: 0;
+}
+
+.my-asset-chart {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+  flex-shrink: 0;
+}
+
+.pie-chart-container {
+  width: 236px;
+  height: 236px;
+  position: relative;
+}
+
+.pie-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-center-label {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  fill: var(--darkgray, #5a5a5a);
+}
+
+.chart-center-value {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  fill: var(--moneyblue, #4068ff);
+}
+
+.chart-overview {
+  width: 100%;
+  padding: 0 24px;
+  /* TODO: 그래프 오버뷰 스타일 */
+}
+
+.my-asset-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+  flex-shrink: 0;
+  background-color: var(--bgwhite, #fcfcfc);
+  border-radius: 10px 10px 0 0;
+  padding-top: 16px;
+  gap: 30px;
+}
+
+.asset-list-header {
+  width: 129px;
+  height: 6px;
+  background-color: var(--subtitlegray, #bcbcbc);
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+.asset-item {
+  width: 100%;
+  height: 81px;
+  display: flex;
+  align-items: center;
+  gap: 21px;
+  padding: 15px 23px;
+  background: linear-gradient(169.353deg, rgb(252, 252, 252) 15.525%, rgb(254, 254, 254) 89.508%);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.asset-item:hover {
+  transform: translateY(-2px);
+}
+
+.asset-icon {
+  font-size: 44px;
+  flex-shrink: 0;
+}
+
+.asset-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asset-title {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--black, #333);
+  margin: 0;
+}
+
+.asset-description {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--subtitlegray, #bcbcbc);
+  margin: 0;
+}
+
+.asset-value {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--black, #333);
+  flex-shrink: 0;
+}
+
+.my-asset-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  flex-shrink: 0;
+  position: absolute;
+  bottom: 96px; /* NavigationBar 높이(86px) + padding(10px) */
+  left: 0;
+  right: 0;
+}
+

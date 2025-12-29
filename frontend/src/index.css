@@ -1,0 +1,53 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Design Tokens */
+  --black: #333;
+  --subtitlegray: #bcbcbc;
+  --lightgray: #f1f1f1;
+  --moneyblue: #4068ff;
+  --bgwhite: #fcfcfc;
+  --darkgray: #5a5a5a;
+}
+
+body {
+  font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #333333;
+  color: #333;
+  /* iOS Safari 스타일 적용 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* 모바일 스크롤 개선 */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 모바일 터치 최적화 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS Safari 주소창 높이 보정 */
+@supports (-webkit-touch-callout: none) {
+  #root {
+    min-height: -webkit-fill-available;
+  }
+}
+
+
+

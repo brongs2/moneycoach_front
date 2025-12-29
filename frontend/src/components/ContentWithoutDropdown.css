@@ -1,0 +1,50 @@
+.content-without-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
+  width: 100%;
+}
+
+.content-label {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--black, #333);
+  line-height: normal;
+}
+
+.input-field {
+  position: relative;
+  width: 100%;
+}
+
+.input-field::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background-color: var(--subtitlegray, #bcbcbc);
+}
+
+.input-value {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--black, #333);
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 5px 0;
+  line-height: normal;
+}
+
+.input-value.placeholder {
+  color: var(--subtitlegray, #bcbcbc);
+}
+
+.input-value::placeholder {
+  color: var(--subtitlegray, #bcbcbc);
+}

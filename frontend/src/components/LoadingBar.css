@@ -1,0 +1,21 @@
+.loading-bar {
+  position: relative;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.loading-bar-full {
+  background-color: var(--lightgray, #f1f1f1);
+  height: 4px;
+  border-radius: 10px;
+  width: 100%;
+  position: relative;
+}
+
+.loading-bar-progress {
+  background-color: var(--moneyblue, #4068ff);
+  height: 4px;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
