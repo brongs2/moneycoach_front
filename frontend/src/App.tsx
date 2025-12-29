@@ -42,9 +42,12 @@ function App() {
   }
 
   const handleMyAssetPageInput = () => {
-    // 선택된 자산 중 입력되지 않은 첫 번째로 이동
-    const assetsArray = Array.from(selectedAssets)
-    const nextAssetToInput = assetsArray.find(asset => !assetData[asset] || assetData[asset].total === 0)
+    // 고정된 순서: 저축 → 투자 → 유형자산 → 빚
+    const assetOrder = ['savings', 'investment', 'tangible', 'debt']
+    const nextAssetToInput = assetOrder.find(asset => 
+      selectedAssets.has(asset) && (!assetData[asset] || assetData[asset].total === 0)
+    )
+    
     if (nextAssetToInput) {
       if (nextAssetToInput === 'savings') {
         setCurrentPage('setupSavings')
@@ -63,11 +66,16 @@ function App() {
   }
 
   const handleSetupComplete = (assetType: string, data: any) => {
-    setAssetData(prev => ({ ...prev, [assetType]: data }))
-    // 다음 자산이 있으면 다음 setup 페이지로, 없으면 myAssetPage로
-    const assetsArray = Array.from(selectedAssets)
-    const currentIndex = assetsArray.indexOf(assetType)
-    const nextAssetToInput = assetsArray.slice(currentIndex + 1).find(asset => !assetData[asset] || assetData[asset].total === 0)
+    // 먼저 업데이트된 assetData를 계산
+    const updatedAssetData = { ...assetData, [assetType]: data }
+    setAssetData(updatedAssetData)
+    
+    // 고정된 순서: 저축 → 투자 → 유형자산 → 빚
+    const assetOrder = ['savings', 'investment', 'tangible', 'debt']
+    const currentIndex = assetOrder.indexOf(assetType)
+    const nextAssetToInput = assetOrder.slice(currentIndex + 1).find(asset => 
+      selectedAssets.has(asset) && (!updatedAssetData[asset] || updatedAssetData[asset].total === 0)
+    )
     
     if (nextAssetToInput) {
       if (nextAssetToInput === 'savings') {
