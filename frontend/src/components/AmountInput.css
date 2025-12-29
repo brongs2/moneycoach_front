@@ -11,6 +11,7 @@
   align-items: center;
   border-bottom: 1px solid var(--subtitlegray, #bcbcbc);
   height: 32px;
+  cursor: pointer;
 }
 
 .amount-input {
@@ -23,43 +24,216 @@
   color: var(--subtitlegray, #bcbcbc);
   background: transparent;
   padding: 0;
-}
-
-.amount-unit {
-  font-family: 'Pretendard Variable', sans-serif;
-  font-weight: 600;
-  font-size: 24px;
-  color: var(--subtitlegray, #bcbcbc);
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.amount-buttons {
-  display: flex;
-  gap: 8px;
+  cursor: pointer;
+  pointer-events: none;
   width: 100%;
 }
 
-.amount-button {
-  flex: 1;
-  height: 32px;
+/* 확대 모드 */
+.amount-input-expanded {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-in-out;
+  /* 키보드가 올라올 때를 대비 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.amount-input-expanded-content {
+  width: 100%;
+  max-width: 393px;
   background-color: var(--bgwhite, #fcfcfc);
-  border: 1px solid var(--subtitlegray, #bcbcbc);
-  border-radius: 8px;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 24px;
+  padding-bottom: max(env(safe-area-inset-bottom), 24px);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.amount-input-expanded-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.amount-cancel-button {
+  background: none;
+  border: none;
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 16px;
+  color: var(--subtitlegray, #bcbcbc);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.amount-confirm-button {
+  background: none;
+  border: none;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--moneyblue, #4068ff);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.amount-input-expanded-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+  min-height: 60px;
+  position: relative;
+  width: 100%;
+}
+
+.amount-expanded-value {
+  text-align: center;
+  flex: 1;
+}
+
+.amount-delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  position: absolute;
+  right: 0;
+}
+
+.amount-delete-button:hover {
+  background-color: var(--lightgray, #f1f1f1);
+}
+
+.amount-delete-button:active {
+  background-color: var(--subtitlegray, #bcbcbc);
+}
+
+.amount-delete-button svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--subtitlegray, #bcbcbc);
+}
+
+.amount-delete-button:hover svg {
+  stroke: var(--black, #333);
+}
+
+.amount-expanded-value {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  color: var(--black, #333);
+  text-align: center;
+}
+
+
+.amount-buttons-expanded {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.amount-button-expanded {
+  flex: 1;
+  height: 48px;
+  background-color: var(--bgwhite, #fcfcfc);
+  border: 1px solid var(--subtitlegray, #bcbcbc);
+  border-radius: 12px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
   color: var(--black, #333);
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.amount-button:hover {
+.amount-button-expanded:hover {
   background-color: var(--lightgray, #f1f1f1);
   border-color: var(--moneyblue, #4068ff);
 }
 
-.amount-button:active {
+.amount-button-expanded:active {
   transform: scale(0.98);
+  background-color: var(--moneyblue, #4068ff);
+  color: var(--bgwhite, #fcfcfc);
+  border-color: var(--moneyblue, #4068ff);
+}
+
+/* 숫자패드 */
+.amount-number-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0 8px;
+}
+
+.number-pad-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.number-pad-button {
+  flex: 1;
+  height: 56px;
+  background-color: var(--bgwhite, #fcfcfc);
+  border: 1px solid var(--lightgray, #f1f1f1);
+  border-radius: 12px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--black, #333);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.number-pad-button:active {
+  transform: scale(0.95);
+  background-color: var(--lightgray, #f1f1f1);
+  border-color: var(--moneyblue, #4068ff);
 }
 

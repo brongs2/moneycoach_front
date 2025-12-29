@@ -38,6 +38,10 @@ const SetupInvestment = ({ onComplete, onBack, isLast = false, onGoToMain }: Set
     ))
   }
 
+  const handleDeleteItem = (id: string) => {
+    setItems(items.filter(item => item.id !== id))
+  }
+
   const handleNext = () => {
     const total = items.reduce((sum, item) => sum + item.amount, 0)
     onComplete({
@@ -125,6 +129,15 @@ const SetupInvestment = ({ onComplete, onBack, isLast = false, onGoToMain }: Set
                     value={item.amount}
                     onChange={(value) => handleItemChange(item.id, 'amount', value)}
                   />
+                  <button 
+                    className="investment-delete-button"
+                    onClick={() => handleDeleteItem(item.id)}
+                    type="button"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="#bcbcbc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}

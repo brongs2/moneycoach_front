@@ -134,6 +134,23 @@
   align-items: center;
 }
 
+.debt-delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+}
+
+.debt-delete-button:hover svg path {
+  stroke: var(--black, #333);
+}
+
 .debt-type-select {
   flex: 1;
   height: 32px;
@@ -145,6 +162,12 @@
   color: var(--subtitlegray, #bcbcbc);
   background: transparent;
   outline: none;
+  /* 모바일에서 기본 스타일 제거 */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none;
+  padding-right: 0;
 }
 
 .add-more-button {
