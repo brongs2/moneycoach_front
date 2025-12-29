@@ -143,13 +143,6 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
           </div>
         </div>
 
-        {/* 아래쪽: 그래프 오버뷰와 계획 세우기 */}
-        <div className="my-asset-bottom-section">
-          <div className="chart-overview">
-            {/* TODO: 그래프 오버뷰 구현 */}
-          </div>
-        </div>
-
         {/* 버튼: 지정된 위치에 고정 */}
         <div className="my-asset-bottom">
           {hasUnfilledAssets ? (

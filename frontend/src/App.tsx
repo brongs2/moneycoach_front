@@ -212,7 +212,7 @@ function App() {
         />
       )
     case 'assetDetail':
-      return (
+  return (
         <AssetDetailPage
           assetType={selectedAssetForDetail || ''}
           assetData={assetData[selectedAssetForDetail || '']}

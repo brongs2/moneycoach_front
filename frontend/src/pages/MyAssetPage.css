@@ -22,6 +22,10 @@
   background-color: var(--lightgray, #f1f1f1);
 }
 
+.setup-container > * {
+  width: 100%;
+}
+
 .setup-header {
   width: 100%;
   height: 61px;
@@ -40,30 +44,20 @@
 
 .my-asset-header {
   width: 100%;
-  background-color: var(--moneyblue, #4068ff);
+  background-color: var(--lightgray, #f1f1f1);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 0 32px 0;
+  padding: 24px 0 0 0;
   gap: 32px;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .my-asset-bottom-section {
-  width: 100%;
-  position: absolute;
-  bottom: 145px; /* NavigationBar(86px) + Button(49px) + margin(10px) */
-  left: 0;
-  right: 0;
-  max-height: 466px; /* Figma의 Frame 58 높이 (403부터 시작, 466px 높이) */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px 0;
-  gap: 24px;
-  overflow-y: auto;
-  background-color: var(--lightgray, #f1f1f1);
-  -webkit-overflow-scrolling: touch;
+  display: none; /* 피그마에 없는 부분이므로 숨김 */
 }
 
 .my-asset-top {
@@ -87,7 +81,7 @@
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 700;
   font-size: 28px;
-  color: var(--bgwhite, #fcfcfc);
+  color: var(--black, #333);
   width: 100%;
   margin: 0;
 }
@@ -96,7 +90,7 @@
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 500;
   font-size: 16px;
-  color: var(--bgwhite, #fcfcfc);
+  color: var(--black, #333);
   width: 100%;
   margin: 0;
 }
@@ -150,12 +144,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 24px;
-  flex-shrink: 0;
+  padding: 16px 24px;
+  flex: 1;
+  min-height: 0;
   background-color: var(--bgwhite, #fcfcfc);
   border-radius: 10px 10px 0 0;
-  padding-top: 16px;
   gap: 30px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: auto;
+  padding-bottom: 180px; /* 버튼과 네비게이션 바 공간 확보 */
 }
 
 .asset-list-header {
@@ -225,11 +223,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  padding: 24px 24px;
   flex-shrink: 0;
   position: absolute;
-  bottom: 96px; /* NavigationBar 높이(86px) + padding(10px) */
+  bottom: 86px; /* NavigationBar 높이 */
   left: 0;
   right: 0;
+  z-index: 5;
 }
 

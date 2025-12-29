@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import StatusBar from '../components/StatusBar'
 import LoadingBar from '../components/LoadingBar'
 import ContentBlueButton from '../components/ContentBlueButton'
@@ -22,6 +22,8 @@ const SetupInvestment = ({ onComplete, onBack, isLast = false, onGoToMain }: Set
   const [items, setItems] = useState<InvestmentItem[]>([
     { id: '1', type: '주식', amount: 0 }
   ])
+  const [shouldScroll, setShouldScroll] = useState(false)
+  const formRef = useRef<HTMLDivElement>(null)
 
   const investmentTypes = ['주식', '부동산', '암호화폐', '기타']
 
@@ -51,6 +53,39 @@ const SetupInvestment = ({ onComplete, onBack, isLast = false, onGoToMain }: Set
     }
   }
 
+  useEffect(() => {
+    const checkSpacing = () => {
+      if (formRef.current && !isLast) {
+        const container = formRef.current.closest('.setup-container')
+        
+        if (container) {
+          const formRect = formRef.current.getBoundingClientRect()
+          const containerRect = container.getBoundingClientRect()
+          
+          // 버튼이 position: absolute; bottom: 64px일 때의 위치 계산
+          // container의 bottom에서 64px 위쪽이 버튼의 top 위치
+          const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49 // 64px(하단 여백) + 49px(버튼 높이)
+          
+          // setup-form의 bottom과 버튼의 top 사이의 실제 간격
+          const spacing = buttonTopWhenAbsolute - formRect.bottom
+          
+          // 간격이 60px보다 작으면 버튼을 레이아웃에 포함 (scrollable)
+          // 간격이 60px 이상이면 버튼을 기존 위치 유지 (absolute)
+          setShouldScroll(spacing < 60)
+        }
+      }
+    }
+
+    checkSpacing()
+    window.addEventListener('resize', checkSpacing)
+    const timer = setTimeout(checkSpacing, 100)
+
+    return () => {
+      window.removeEventListener('resize', checkSpacing)
+      clearTimeout(timer)
+    }
+  }, [items, isLast])
+
   return (
     <div className="setup-investment">
       <div className="setup-container">
@@ -64,7 +99,7 @@ const SetupInvestment = ({ onComplete, onBack, isLast = false, onGoToMain }: Set
           </svg>
         </div>
 
-        <div className="setup-content">
+        <div className="setup-content-scrollable">
           <div className="setup-top">
             <LoadingBar currentStep={3} totalSteps={4} />
             <div className="setup-title">
@@ -73,7 +108,7 @@ const SetupInvestment = ({ onComplete, onBack, isLast = false, onGoToMain }: Set
             </div>
           </div>
 
-          <div className="setup-form">
+          <div ref={formRef} className="setup-form setup-form-spaced">
             {items.map((item) => (
               <div key={item.id} className="investment-item">
                 <div className="investment-input-row">
@@ -96,7 +131,7 @@ const SetupInvestment = ({ onComplete, onBack, isLast = false, onGoToMain }: Set
             <button className="add-more-button" onClick={handleAddMore}>+ 추가하기</button>
           </div>
 
-          <div className={`setup-bottom ${isLast ? 'fixed' : ''}`}>
+          <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''} ${isLast ? 'fixed' : ''}`}>
             {isLast ? (
               <ContentBlueButton label="메인 화면으로 가기" onClick={handleFinish} />
             ) : (
