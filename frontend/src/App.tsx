@@ -21,14 +21,22 @@ type Page =
   | 'assetDetail'
   | 'mainPage'
 
+interface PersonalInfo {
+  purpose: string
+  gender: string
+  birthDate: string
+}
+
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('personalInfo')
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null)
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
   const [assetData, setAssetData] = useState<Record<string, any>>({})
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<string | null>(null)
   const [lastSetupPage, setLastSetupPage] = useState<Page | null>(null)
 
-  const handlePersonalInfoNext = () => {
+  const handlePersonalInfoNext = (info: PersonalInfo) => {
+    setPersonalInfo(info)
     setCurrentPage('selectAssets')
   }
 
@@ -101,8 +109,120 @@ function App() {
     setCurrentPage('assetDetail')
   }
 
-  const handleGoToMain = () => {
-    setCurrentPage('mainPage')
+  const handleGoToMain = async () => {
+    // 모든 데이터를 백엔드로 보낼 수 있는 형태로 정리
+    const submissionData = prepareSubmissionData()
+    
+    // 콘솔에 데이터 출력
+    console.log('=== 백엔드로 전송되는 데이터 ===')
+    console.log(JSON.stringify(submissionData, null, 2))
+    console.log('================================')
+    
+    // 백엔드로 데이터 전송
+    try {
+      const response = await fetch('http://localhost:8000/api/user-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
+      })
+      
+      if (response.ok) {
+        const responseData = await response.json()
+        console.log('데이터 전송 성공:', responseData)
+        setCurrentPage('mainPage')
+      } else {
+        console.error('데이터 전송 실패:', response.statusText)
+        // 에러가 있어도 메인 페이지로 이동
+        setCurrentPage('mainPage')
+      }
+    } catch (error) {
+      console.error('데이터 전송 중 오류 발생:', error)
+      // 에러가 있어도 메인 페이지로 이동
+      setCurrentPage('mainPage')
+    }
+  }
+
+  // 백엔드로 보낼 데이터 구조화 함수
+  const prepareSubmissionData = () => {
+    const categoryMap: Record<string, string> = {
+      savings: '저축',
+      investment: '투자',
+      tangible: '유형자산',
+      debt: '부채'
+    }
+
+    const assetsList = Array.from(selectedAssets).map(categoryId => {
+      const categoryName = categoryMap[categoryId] || categoryId
+      const data = assetData[categoryId]
+      
+      if (!data || !data.items || data.items.length === 0) {
+        return {
+          category: categoryName,
+          categoryId,
+          items: [],
+          total: 0,
+          unit: '만원'
+        }
+      }
+
+      // 각 카테고리별로 items를 정리
+      const items = data.items.map((item: any) => {
+        const formattedItem: any = {
+          id: item.id || '',
+          amount: item.amount || 0,
+          unit: '만원'
+        }
+
+        // 저축/투자: type 필드
+        if (categoryId === 'savings' || categoryId === 'investment') {
+          formattedItem.type = item.type || ''
+        }
+
+        // 유형자산: type, ownership, 대출 관련 필드
+        if (categoryId === 'tangible') {
+          formattedItem.type = item.type || ''
+          formattedItem.ownership = item.ownership || ''
+          if (item.ownership === '대출') {
+            formattedItem.loanAmount = item.loanAmount || 0
+            formattedItem.interestRate = item.interestRate || 0
+            formattedItem.monthlyPayment = item.monthlyPayment || 0
+          }
+        }
+
+        // 부채: type, category, 이자율, 월 상환액
+        if (categoryId === 'debt') {
+          formattedItem.type = item.type || ''
+          formattedItem.category = item.category || ''
+          formattedItem.interestRate = item.interestRate || 0
+          formattedItem.monthlyPayment = item.monthlyPayment || 0
+        }
+
+        return formattedItem
+      })
+
+      return {
+        category: categoryName,
+        categoryId,
+        items,
+        total: data.total || 0,
+        unit: '만원'
+      }
+    })
+
+    return {
+      personalInfo: personalInfo || {
+        purpose: '',
+        gender: '',
+        birthDate: ''
+      },
+      selectedCategories: Array.from(selectedAssets).map(id => ({
+        id,
+        name: categoryMap[id] || id
+      })),
+      assets: assetsList
+    }
   }
 
   const handleBackFromSetup = () => {

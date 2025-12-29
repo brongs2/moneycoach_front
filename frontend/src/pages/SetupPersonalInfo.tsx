@@ -9,7 +9,7 @@ import ContentBlueButton from '../components/ContentBlueButton'
 import './SetupPersonalInfo.css'
 
 interface SetupPersonalInfoProps {
-  onNext?: () => void
+  onNext?: (info: { purpose: string; gender: string; birthDate: string }) => void
 }
 
 const SetupPersonalInfo = ({ onNext }: SetupPersonalInfoProps) => {
@@ -27,7 +27,7 @@ const SetupPersonalInfo = ({ onNext }: SetupPersonalInfoProps) => {
 
   const handleNext = () => {
     console.log('다음 단계로 이동', { purpose, gender, birthDate })
-    onNext?.()
+    onNext?.({ purpose, gender, birthDate })
   }
 
   return (
