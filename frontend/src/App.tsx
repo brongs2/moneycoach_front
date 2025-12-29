@@ -163,60 +163,31 @@ function App() {
         />
       )
     case 'setupSavings':
-      const remainingAssetsAfterSavings = Array.from(selectedAssets).filter(
-        asset => !assetData[asset] && asset !== 'savings'
-      )
       return (
         <SetupSavings
           onComplete={(data) => handleSetupComplete('savings', data)}
           onBack={handleBackFromSetup}
-          isLast={remainingAssetsAfterSavings.length === 0}
-          onGoToMain={handleGoToMain}
         />
       )
     case 'setupInvestment':
-      const remainingAssetsAfterInvestment = Array.from(selectedAssets).filter(
-        asset => {
-          const hasData = assetData[asset] && assetData[asset].total > 0
-          return !hasData && asset !== 'investment'
-        }
-      )
       return (
         <SetupInvestment
           onComplete={(data) => handleSetupComplete('investment', data)}
           onBack={handleBackFromSetup}
-          isLast={remainingAssetsAfterInvestment.length === 0}
-          onGoToMain={handleGoToMain}
         />
       )
     case 'setupRealAssets':
-      const remainingAssetsAfterRealAssets = Array.from(selectedAssets).filter(
-        asset => {
-          const hasData = assetData[asset] && assetData[asset].total > 0
-          return !hasData && asset !== 'tangible'
-        }
-      )
       return (
         <SetupRealAssets
           onComplete={(data) => handleSetupComplete('tangible', data)}
           onBack={handleBackFromSetup}
-          isLast={remainingAssetsAfterRealAssets.length === 0}
-          onGoToMain={handleGoToMain}
         />
       )
     case 'setupDebt':
-      const remainingAssetsAfterDebt = Array.from(selectedAssets).filter(
-        asset => {
-          const hasData = assetData[asset] && assetData[asset].total > 0
-          return !hasData && asset !== 'debt'
-        }
-      )
       return (
         <SetupDebt
           onComplete={(data) => handleSetupComplete('debt', data)}
           onBack={handleBackFromSetup}
-          isLast={remainingAssetsAfterDebt.length === 0}
-          onGoToMain={handleGoToMain}
         />
       )
     case 'assetDetail':
