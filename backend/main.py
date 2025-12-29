@@ -1,23 +1,57 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-import httpx
-import os
-# from mcp_client import mcp_client  # MCP 클라이언트 통합 시 주석 해제
+import asyncpg
 
-app = FastAPI(title="Figma MCP API")
+# ===== 우리가 만든 backend 모듈들 =====
+from backend.db import get_db_connection
+from backend.auth import get_current_user, CurrentUser
+from backend.snapshot import load_user_snapshot
+from backend.routes import savings, investments, assets, debts, plans
+# from backend.mcp_client import mcp_client  # MCP 구현 시 사용
 
-# CORS 설정
+# ==============================
+# FastAPI 앱 (⚠️ 하나만!)
+# ==============================
+app = FastAPI(title="MoneyCoach + Figma MCP API")
+
+# ==============================
+# CORS
+# ==============================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # React 개발 서버
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ==============================
+# Static / Templates
+# ==============================
+app.mount("/static", StaticFiles(directory="backend/static"), name="static")
+templates = Jinja2Templates(directory="backend/templates")
 
+# ==============================
+# 라우터 등록 (Money 관련)
+# ==============================
+app.include_router(savings.router, prefix="/api", tags=["savings"])
+app.include_router(investments.router, prefix="/api", tags=["investments"])
+app.include_router(assets.router, prefix="/api", tags=["assets"])
+app.include_router(debts.router, prefix="/api", tags=["debts"])
+app.include_router(plans.router, prefix="/api", tags=["plans"])
+
+# ==============================
+# Figma MCP 관련 스키마
+# ==============================
 class FigmaNodeResponse(BaseModel):
     name: str
     id: str
@@ -31,23 +65,19 @@ class ScreenshotResponse(BaseModel):
     imageDataUrl: str
 
 
+# ==============================
+# 기본 헬스 체크
+# ==============================
 @app.get("/")
 async def root():
-    return {"message": "Figma MCP API Server"}
+    return {"message": "MoneyCoach Backend Server Running"}
 
-
+# ==============================
+# Figma MCP API
+# ==============================
 @app.get("/api/figma/metadata", response_model=Dict[str, Any])
 async def get_figma_metadata(nodeId: Optional[str] = None):
-    """
-    Figma에서 선택한 프레임의 메타데이터를 가져옵니다.
-    nodeId가 제공되지 않으면 현재 선택된 노드를 사용합니다.
-    """
     try:
-        # MCP 클라이언트를 사용한 실제 호출 (구현 후 주석 해제)
-        # result = await mcp_client.get_metadata(nodeId)
-        # return {"node": result}
-        
-        # 임시로 구조만 반환 (실제 MCP 통합 시 위 코드 사용)
         return {
             "node": {
                 "name": "Sample Frame",
@@ -57,7 +87,7 @@ async def get_figma_metadata(nodeId: Optional[str] = None):
                 "height": 812,
                 "children": []
             },
-            "message": "MCP 통합 필요 - backend/mcp_client.py 구현 후 주석 해제"
+            "message": "MCP 통합 필요"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -65,44 +95,44 @@ async def get_figma_metadata(nodeId: Optional[str] = None):
 
 @app.get("/api/figma/screenshot", response_model=ScreenshotResponse)
 async def get_figma_screenshot(nodeId: Optional[str] = None):
-    """
-    Figma에서 선택한 프레임의 스크린샷을 가져옵니다.
-    """
-    try:
-        # MCP 클라이언트를 사용한 실제 호출 (구현 후 주석 해제)
-        # image_data = await mcp_client.get_screenshot(nodeId)
-        # return {"imageDataUrl": image_data}
-        
-        # 임시 응답
-        raise HTTPException(
-            status_code=501,
-            detail="MCP 통합 필요 - backend/mcp_client.py 구현 후 주석 해제"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=501,
+        detail="MCP 통합 필요"
+    )
 
 
 @app.get("/api/figma/design-context")
 async def get_figma_design_context(nodeId: Optional[str] = None):
-    """
-    Figma에서 선택한 프레임의 디자인 컨텍스트를 가져옵니다.
-    """
-    try:
-        # MCP 클라이언트를 사용한 실제 호출 (구현 후 주석 해제)
-        # result = await mcp_client.get_design_context(nodeId)
-        # return result
-        
-        return {
-            "message": "MCP 통합 필요 - backend/mcp_client.py 구현 후 주석 해제",
-            "nodeId": nodeId
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "message": "MCP 통합 필요",
+        "nodeId": nodeId
+    }
 
+# ==============================
+# 대시보드 (HTML)
+# ==============================
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+    conn: asyncpg.Connection = Depends(get_db_connection),
+):
+    snapshot = await load_user_snapshot(conn, current_user.id)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    plans_data = await conn.fetch(
+        "SELECT id, title, description FROM plans WHERE user_id = $1 ORDER BY created_at DESC",
+        current_user.id
+    )
 
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {
+            "request": request,
+            "user": current_user,
+            "savings": snapshot.get("savings", []),
+            "investments": snapshot.get("investments", []),
+            "assets": snapshot.get("assets", []),
+            "debts": snapshot.get("debts", []),
+            "plans": plans_data,
+        },
+    )

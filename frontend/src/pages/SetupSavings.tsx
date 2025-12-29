@@ -38,13 +38,29 @@ const SetupSavings = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupS
     ))
   }
 
-  const handleNext = () => {
-    const total = items.reduce((sum, item) => sum + item.amount, 0)
-    onComplete({
-      items: items.filter(item => item.amount > 0),
-      total,
-    })
+  const handleNext = async () => {
+  const payloadItems = items
+    .filter(i => i.amount > 0)
+    .map(i => ({ category: i.type, amount: i.amount }))
+
+  const total = payloadItems.reduce((sum, i) => sum + i.amount, 0)
+
+  // ✅ 백엔드로 전송 (bulk)
+  const res = await fetch("http://127.0.0.1:8000/api/savings/bulk", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include", // 쿠키/세션 쓰면 필요
+    body: JSON.stringify({ items: payloadItems }),
+  })
+  const text = await res.text()
+  console.log("status", res.status, text)
+  if (!res.ok) {
+    console.error(await res.text())
+    return
   }
+
+  onComplete({ items: payloadItems, total })
+}
 
   const handleFinish = () => {
     handleNext()
