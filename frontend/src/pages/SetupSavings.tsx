@@ -7,7 +7,7 @@ import './SetupSavings.css'
 
 interface SavingsItem {
   id: string
-  type: string
+  category: string   // ✅ type -> category
   amount: number
 }
 
@@ -18,7 +18,7 @@ interface SetupSavingsProps {
 
 const SetupSavings = ({ onComplete, onBack }: SetupSavingsProps) => {
   const [items, setItems] = useState<SavingsItem[]>([
-    { id: '1', type: '일반 예금', amount: 0 }
+    { id: '1', category: '일반 예금', amount: 0 }  // ✅
   ])
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
@@ -27,11 +27,15 @@ const SetupSavings = ({ onComplete, onBack }: SetupSavingsProps) => {
 
   const handleAddMore = () => {
     const newId = Date.now().toString()
-    setItems([...items, { id: newId, type: '일반 예금', amount: 0 }])
+    setItems([...items, { id: newId, category: '일반 예금', amount: 0 }]) // ✅
   }
 
-  const handleItemChange = (id: string, field: 'type' | 'amount', value: string | number) => {
-    setItems(items.map(item => 
+  const handleItemChange = (
+    id: string,
+    field: 'category' | 'amount',          // ✅
+    value: string | number
+  ) => {
+    setItems(items.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ))
   }
@@ -52,20 +56,14 @@ const SetupSavings = ({ onComplete, onBack }: SetupSavingsProps) => {
     const checkSpacing = () => {
       if (formRef.current) {
         const container = formRef.current.closest('.setup-container')
-        
+
         if (container) {
           const formRect = formRef.current.getBoundingClientRect()
           const containerRect = container.getBoundingClientRect()
-          
-          // 버튼이 position: absolute; bottom: 64px일 때의 위치 계산
-          // container의 bottom에서 64px 위쪽이 버튼의 top 위치
-          const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49 // 64px(하단 여백) + 49px(버튼 높이)
-          
-          // setup-form의 bottom과 버튼의 top 사이의 실제 간격
+
+          const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49
           const spacing = buttonTopWhenAbsolute - formRect.bottom
-          
-          // 간격이 60px보다 작으면 버튼을 레이아웃에 포함 (scrollable)
-          // 간격이 60px 이상이면 버튼을 기존 위치 유지 (absolute)
+
           setShouldScroll(spacing < 60)
         }
       }
@@ -90,7 +88,7 @@ const SetupSavings = ({ onComplete, onBack }: SetupSavingsProps) => {
 
         <div className="setup-back-button" onClick={onBack}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
 
@@ -107,26 +105,28 @@ const SetupSavings = ({ onComplete, onBack }: SetupSavingsProps) => {
             {items.map((item) => (
               <div key={item.id} className="savings-item">
                 <div className="savings-input-row">
-                  <select 
+                  <select
                     className="savings-type-select"
-                    value={item.type}
-                    onChange={(e) => handleItemChange(item.id, 'type', e.target.value)}
+                    value={item.category}  // ✅
+                    onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} // ✅
                   >
-                    {savingsTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
+                    {savingsTypes.map(label => (
+                      <option key={label} value={label}>{label}</option>
                     ))}
                   </select>
+
                   <AmountInput
                     value={item.amount}
                     onChange={(value) => handleItemChange(item.id, 'amount', value)}
                   />
-                  <button 
+
+                  <button
                     className="savings-delete-button"
                     onClick={() => handleDeleteItem(item.id)}
                     type="button"
                   >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 6L6 18M6 6l12 12" stroke="#bcbcbc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M18 6L6 18M6 6l12 12" stroke="#bcbcbc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                 </div>
@@ -145,4 +145,3 @@ const SetupSavings = ({ onComplete, onBack }: SetupSavingsProps) => {
 }
 
 export default SetupSavings
-

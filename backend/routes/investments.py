@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 import asyncpg
 from datetime import date
 from backend.db import get_db_connection
-from backend.schemas.schemas import InvestmentCreate, InvestmentUpdate, InvestmentOut
+from backend.schemas.schemas import InvestmentCreate, InvestmentUpdate, InvestmentOut, InvestmentBulkCreate
 from backend.auth import get_current_user, CurrentUser
-
+from typing import List
 router = APIRouter(prefix="/investments", tags=["investments"])
 
 # ===== 목록 조회 =====
@@ -95,6 +95,40 @@ async def insert_investment(
         "roi": float(row["roi"]),
         "dividend": float(row["dividend"]),
         "deposit": float(row["deposit"]),
+    }
+
+@router.post("/bulk")
+async def insert_investmentss_bulk(
+    payload: InvestmentBulkCreate,
+    current_user: CurrentUser = Depends(get_current_user),
+    conn: asyncpg.Connection = Depends(get_db_connection),
+):
+    if not payload.items:
+        raise HTTPException(status_code=400, detail="items is required")
+
+    async with conn.transaction():
+        rows = []
+        for item in payload.items:
+            if not item.category:
+                raise HTTPException(status_code=400, detail="category is required")
+
+            row = await conn.fetchrow(
+                """
+                INSERT INTO investments (user_id, category, amount)
+                VALUES ($1, $2, $3)
+                RETURNING id, user_id, category::text AS category, amount, created_at, updated_at
+                """,
+                current_user.id,
+                item.category.upper(),
+                item.amount,
+            )
+            rows.append(row)
+
+    return {
+        "ok": True,
+        "created": [
+            {**dict(r), "amount": float(r["amount"])} for r in rows
+        ],
     }
 
 

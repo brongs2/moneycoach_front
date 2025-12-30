@@ -5,15 +5,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel
-<<<<<<< HEAD
 from typing import Optional, Dict, Any
 import asyncpg
-=======
-from typing import Optional, Dict, Any, List
-import httpx
-import os
-# from mcp_client import mcp_client  # MCP 클라이언트 통합 시 주석 해제
->>>>>>> a5111a1124c5c4befcc6e70c89a556e91077f066
 
 # ===== 우리가 만든 backend 모듈들 =====
 from backend.db import get_db_connection
@@ -72,50 +65,9 @@ class ScreenshotResponse(BaseModel):
     imageDataUrl: str
 
 
-<<<<<<< HEAD
 # ==============================
 # 기본 헬스 체크
 # ==============================
-=======
-# 사용자 데이터 모델
-class PersonalInfo(BaseModel):
-    purpose: str
-    gender: str
-    birthDate: str
-
-
-class AssetItem(BaseModel):
-    id: Optional[str] = None
-    type: Optional[str] = None
-    amount: float
-    unit: str = "만원"
-    ownership: Optional[str] = None
-    category: Optional[str] = None
-    loanAmount: Optional[float] = None
-    interestRate: Optional[float] = None
-    monthlyPayment: Optional[float] = None
-
-
-class CategoryData(BaseModel):
-    category: str
-    categoryId: str
-    items: List[AssetItem]
-    total: float
-    unit: str = "만원"
-
-
-class SelectedCategory(BaseModel):
-    id: str
-    name: str
-
-
-class UserDataSubmission(BaseModel):
-    personalInfo: PersonalInfo
-    selectedCategories: List[SelectedCategory]
-    assets: List[CategoryData]
-
-
->>>>>>> a5111a1124c5c4befcc6e70c89a556e91077f066
 @app.get("/")
 async def root():
     return {"message": "MoneyCoach Backend Server Running"}
@@ -167,35 +119,10 @@ async def dashboard(
 ):
     snapshot = await load_user_snapshot(conn, current_user.id)
 
-<<<<<<< HEAD
     plans_data = await conn.fetch(
         "SELECT id, title, description FROM plans WHERE user_id = $1 ORDER BY created_at DESC",
         current_user.id
     )
-=======
-@app.post("/api/user-data")
-async def submit_user_data(data: UserDataSubmission):
-    """
-    사용자가 입력한 모든 데이터를 받아서 저장합니다.
-    """
-    try:
-        # 여기에 데이터베이스 저장 로직을 추가할 수 있습니다
-        # 예: database.save_user_data(data)
-        
-        # 현재는 받은 데이터를 그대로 반환 (확인용)
-        return {
-            "success": True,
-            "message": "데이터가 성공적으로 저장되었습니다.",
-            "data": data.dict()
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
->>>>>>> a5111a1124c5c4befcc6e70c89a556e91077f066
 
     return templates.TemplateResponse(
         "dashboard.html",

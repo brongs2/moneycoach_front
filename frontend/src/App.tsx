@@ -108,41 +108,145 @@ function App() {
     setSelectedAssetForDetail(assetType)
     setCurrentPage('assetDetail')
   }
+async function postCategory(url: string, payload: any) {
+  console.log(`➡️ POST ${url}`)
+  console.log('📤 payload:', JSON.stringify(payload, null, 2))
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let errorBody: any = null
+    try {
+      errorBody = await res.json()
+    } catch {
+      errorBody = await res.text()
+    }
+
+    console.error(`❌ API ERROR ${url}`)
+    console.error('status:', res.status)
+    console.error('error body:', errorBody)
+
+    throw new Error(`API failed: ${url}`)
+  }
+
+  const data = await res.json()
+  console.log(`✅ API SUCCESS ${url}`, data)
+  return data
+}
 
   const handleGoToMain = async () => {
-    // 모든 데이터를 백엔드로 보낼 수 있는 형태로 정리
-    const submissionData = prepareSubmissionData()
-    
-    // 콘솔에 데이터 출력
-    console.log('=== 백엔드로 전송되는 데이터 ===')
-    console.log(JSON.stringify(submissionData, null, 2))
-    console.log('================================')
-    
-    // 백엔드로 데이터 전송
-    try {
-      const response = await fetch('http://localhost:8000/api/user-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionData),
-      })
-      
-      if (response.ok) {
-        const responseData = await response.json()
-        console.log('데이터 전송 성공:', responseData)
-        setCurrentPage('mainPage')
-      } else {
-        console.error('데이터 전송 실패:', response.statusText)
-        // 에러가 있어도 메인 페이지로 이동
-        setCurrentPage('mainPage')
+  const submissionData = prepareSubmissionData()
+
+  console.log('=== 백엔드로 전송되는 데이터 ===')
+  console.log(JSON.stringify(submissionData, null, 2))
+  console.log('================================')
+
+  try {
+    // ✅ SAVINGS
+    if (selectedAssets.has('savings')) {
+      const savingsCategoryMap: Record<string, string> = {
+        '일반 예금': 'DEPOSIT',
+        '적금': 'SAVING',
+        '청약': 'SUBSCRIPTION',
+        '기타': 'ETC',
       }
-    } catch (error) {
-      console.error('데이터 전송 중 오류 발생:', error)
-      // 에러가 있어도 메인 페이지로 이동
-      setCurrentPage('mainPage')
+
+      const payload = {
+        items: (assetData.savings?.items ?? [])
+          .map((it: any) => ({
+            category: savingsCategoryMap[it.category] ?? it.category,
+            amount: Number(it.amount ?? 0),
+          }))
+          .filter((x: any) => x.amount > 0),
+      }
+
+      await postCategory('http://localhost:8000/api/savings/bulk', payload)
     }
+
+    // ✅ INVESTMENT (추가)
+    if (selectedAssets.has('investment')) {
+      const investmentCategoryMap: Record<string, string> = {
+        '주식': 'STOCK',
+        '부동산': 'REAL_ESTATE',
+        '암호화폐': 'CRYPTO',
+        '기타': 'ETC',
+      }
+
+      const payload = {
+        items: (assetData.investment?.items ?? [])
+          .map((it: any) => ({
+            category: investmentCategoryMap[it.category] ?? it.category,
+            amount: Number(it.amount ?? 0),
+          }))
+          .filter((x: any) => x.amount > 0),
+      }
+
+      await postCategory('http://localhost:8000/api/investments/bulk', payload)
+    }
+
+    // tangible/debt도 bulk가 items wrapper면 똑같이 감싸야 함 (swagger 기준)
+    if (selectedAssets.has('tangible')) {
+    const assetCategoryMap: Record<string, string> = {
+      '집': 'HOUSE',
+      '오피스텔': 'OFFICETEL',
+      '상가': 'STORE',
+      '기타': 'ETC',
+    }
+
+    const payload = {
+      items: (assetData.tangible?.items ?? []).map((it: any) => ({
+        category: assetCategoryMap[it.category] ?? it.category,
+        amount: Number(it.amount ?? 0),
+        loan_amount: Number(it.loan_amount ?? 0),
+        interest_rate: Number(it.interest_rate ?? 0),
+        repay_amount: Number(it.repay_amount ?? 0),
+      })),
+    }
+
+    await postCategory('http://localhost:8000/api/assets/bulk', payload)
   }
+
+
+    if (selectedAssets.has('debt')) {
+      const debtCategoryMap: Record<string, string> = {
+        '학자금 대출': 'STUDENT_LOAN',
+        '신용 대출': 'CREDIT',
+        '주택 대출': 'MORTGAGE',
+        '기타': 'ETC',
+      }
+
+      const payload = {
+        items: (assetData.debt?.items ?? [])
+          .map((it: any) => ({
+            category: debtCategoryMap[it.category] ?? it.category, // ✅ DebtType
+            loan_amount: Number(it.loan_amount ?? 0),
+            repay_amount: Number(it.repay_amount ?? 0),
+            interest_rate: Number(it.interest_rate ?? 0),
+            compound: it.compound ?? 'COMPOUND', // ✅ SIMPLE / COMPOUND
+          }))
+          .filter((x: any) => x.loan_amount > 0),
+      }
+
+      await postCategory(
+        'http://localhost:8000/api/debts/bulk',
+        payload
+      )
+    }
+
+
+    setCurrentPage('mainPage')
+  } catch (e) {
+    console.error('전송 실패', e)
+    setCurrentPage('mainPage')
+  }
+}
+
 
   // 백엔드로 보낼 데이터 구조화 함수
   const prepareSubmissionData = () => {

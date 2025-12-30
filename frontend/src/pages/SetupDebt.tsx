@@ -8,11 +8,11 @@ import './SetupDebt.css'
 
 interface DebtItem {
   id: string
-  type: string
-  category: string
-  amount: number
-  interestRate?: number
-  monthlyPayment?: number
+  category: string          // ✅ type -> category (DebtType)
+  compound: string          // ✅ category(단리/복리) -> compound
+  loan_amount: number       // ✅ amount -> loan_amount
+  interest_rate?: number    // ✅ interestRate -> interest_rate
+  repay_amount?: number     // ✅ monthlyPayment -> repay_amount
 }
 
 interface SetupDebtProps {
@@ -24,35 +24,37 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
   const [completedItems, setCompletedItems] = useState<DebtItem[]>([])
   const [currentItem, setCurrentItem] = useState<DebtItem>({
     id: 'current',
-    type: '학자금 대출',
-    category: '대출',
-    amount: 0
+    category: '학자금 대출',
+    compound: '복리',     // ✅ 기본값(토글 옵션과 맞추기)
+    loan_amount: 0,
+    interest_rate: 0,
+    repay_amount: 0,
   })
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
 
   const debtTypes = ['학자금 대출', '신용 대출', '주택 대출', '기타']
-  const debtCategories: [string, string] = ['단리', '복리']
+  const debtCompounds: [string, string] = ['단리', '복리']  // ✅
 
   const handleAddMore = () => {
-    // 현재 입력 중인 항목을 완료된 항목 목록에 추가
     const itemToAdd = { ...currentItem, id: Date.now().toString() }
     setCompletedItems([...completedItems, itemToAdd])
-    
-    // 새로운 빈 항목으로 초기화
+
     setCurrentItem({
       id: 'current',
-      type: '학자금 대출',
-      category: '대출',
-      amount: 0
+      category: '학자금 대출',
+      compound: '복리',
+      loan_amount: 0,
+      interest_rate: 0,
+      repay_amount: 0,
     })
   }
 
-  const handleItemChange = (field: 'type' | 'category' | 'amount' | 'interestRate' | 'monthlyPayment', value: string | number) => {
-    const updated = { ...currentItem, [field]: value }
-    // category가 '신용카드'로 변경되면 이자율/월 상환액 필드 초기화 (필요시)
-    // 현재는 모든 category에서 이자율/월 상환액을 입력할 수 있도록 함
-    setCurrentItem(updated)
+  const handleItemChange = (
+    field: 'category' | 'compound' | 'loan_amount' | 'interest_rate' | 'repay_amount',
+    value: string | number
+  ) => {
+    setCurrentItem({ ...currentItem, [field]: value })
   }
 
   const handleDeleteCompletedItem = (id: string) => {
@@ -60,14 +62,24 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
   }
 
   const handleNext = () => {
-    // 완료된 항목과 현재 항목을 합쳐서 전달
-    const allItems = currentItem.amount > 0 
+    const allItems = currentItem.loan_amount > 0
       ? [...completedItems, currentItem]
       : completedItems
-    
-    const total = allItems.reduce((sum, item) => sum + item.amount, 0)
+
+    const total = allItems.reduce((sum, item) => sum + item.loan_amount, 0)
+
+    // ✅ 백엔드가 기대하는 이름으로 전달
     onComplete({
-      items: allItems.filter(item => item.amount > 0),
+      items: allItems
+        .filter(item => item.loan_amount > 0)
+        .map(item => ({
+          category: item.category,
+          loan_amount: Number(item.loan_amount ?? 0),
+          repay_amount: Number(item.repay_amount ?? 0),
+          interest_rate: Number(item.interest_rate ?? 0),
+          // 단리/복리 -> SIMPLE/COMPOUND 로 매핑(백엔드 Compound enum에 맞춤)
+          compound: item.compound === '단리' ? 'SIMPLE' : 'COMPOUND',
+        })),
       total,
     })
   }
@@ -76,20 +88,14 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
     const checkSpacing = () => {
       if (formRef.current) {
         const container = formRef.current.closest('.setup-container')
-        
+
         if (container) {
           const formRect = formRef.current.getBoundingClientRect()
           const containerRect = container.getBoundingClientRect()
-          
-          // 버튼이 position: absolute; bottom: 64px일 때의 위치 계산
-          // container의 bottom에서 64px 위쪽이 버튼의 top 위치
-          const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49 // 64px(하단 여백) + 49px(버튼 높이)
-          
-          // setup-form의 bottom과 버튼의 top 사이의 실제 간격
+
+          const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49
           const spacing = buttonTopWhenAbsolute - formRect.bottom
-          
-          // 간격이 60px보다 작으면 버튼을 레이아웃에 포함 (scrollable)
-          // 간격이 60px 이상이면 버튼을 기존 위치 유지 (absolute)
+
           setShouldScroll(spacing < 60)
         }
       }
@@ -128,22 +134,26 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
           </div>
 
           <div ref={formRef} className="setup-form setup-form-spaced">
-            {/* 완료된 항목들 요약 표시 */}
             {completedItems.map((item) => (
               <div key={item.id} className="debt-summary">
                 <div className="debt-summary-content">
                   <span className="summary-text">
-                    {item.type}, {item.amount >= 10000 
-                      ? `${(item.amount / 10000).toFixed(1)}억`
-                      : `${item.amount}만원`}
-                    {item.interestRate && item.interestRate > 0 && `, 이자율 ${item.interestRate}%`}
-                    {item.monthlyPayment && item.monthlyPayment > 0 && (
-                      <>, 월 상환액 {item.monthlyPayment >= 10000 
-                        ? `${(item.monthlyPayment / 10000).toFixed(1)}억`
-                        : `${item.monthlyPayment}만원`}</>
+                    {item.category},{' '}
+                    {item.loan_amount >= 10000
+                      ? `${(item.loan_amount / 10000).toFixed(1)}억`
+                      : `${item.loan_amount}만원`}
+                    {(item.interest_rate ?? 0) > 0 && `, 이자율 ${item.interest_rate}%`}
+                    {(item.repay_amount ?? 0) > 0 && (
+                      <>
+                        , 월 상환액{' '}
+                        {(item.repay_amount ?? 0) >= 10000
+                          ? `${((item.repay_amount ?? 0) / 10000).toFixed(1)}억`
+                          : `${item.repay_amount}만원`}
+                      </>
                     )}
                   </span>
-                  <button 
+
+                  <button
                     className="debt-summary-delete"
                     onClick={() => handleDeleteCompletedItem(item.id)}
                     type="button"
@@ -156,29 +166,31 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
               </div>
             ))}
 
-            {/* 현재 입력 중인 항목 */}
             <div className="debt-item">
               <div className="debt-input-row">
-                <select 
+                <select
                   className="debt-type-select"
-                  value={currentItem.type}
-                  onChange={(e) => handleItemChange('type', e.target.value)}
+                  value={currentItem.category}
+                  onChange={(e) => handleItemChange('category', e.target.value)}
                 >
-                  {debtTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
+                  {debtTypes.map(label => (
+                    <option key={label} value={label}>{label}</option>
                   ))}
                 </select>
+
                 <AmountInput
-                  value={currentItem.amount}
-                  onChange={(value) => handleItemChange('amount', value)}
+                  value={currentItem.loan_amount}
+                  onChange={(value) => handleItemChange('loan_amount', value)}
                 />
               </div>
+
               <ContentToggleButton
                 label="부채 유형"
-                options={debtCategories}
-                value={currentItem.category}
-                onChange={(value) => handleItemChange('category', value)}
+                options={debtCompounds}
+                value={currentItem.compound}
+                onChange={(value) => handleItemChange('compound', value)}
               />
+
               <div className="debt-additional-fields">
                 <div className="debt-field-row debt-field-row-inline">
                   <div className="debt-field-half">
@@ -187,10 +199,10 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
                       <input
                         type="number"
                         className="interest-rate-input"
-                        value={currentItem.interestRate || ''}
+                        value={currentItem.interest_rate || ''}
                         onChange={(e) => {
-                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
-                          handleItemChange('interestRate', value)
+                          const v = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                          handleItemChange('interest_rate', v)
                         }}
                         placeholder="0"
                         min="0"
@@ -200,16 +212,18 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
                       <span className="interest-rate-unit">%</span>
                     </div>
                   </div>
+
                   <div className="debt-field-half">
                     <label className="debt-field-label">월 상환액</label>
                     <AmountInput
-                      value={currentItem.monthlyPayment || 0}
-                      onChange={(value) => handleItemChange('monthlyPayment', value)}
+                      value={currentItem.repay_amount || 0}
+                      onChange={(value) => handleItemChange('repay_amount', value)}
                     />
                   </div>
                 </div>
               </div>
             </div>
+
             <button className="add-more-button" onClick={handleAddMore}>+ 추가하기</button>
           </div>
 
@@ -223,4 +237,3 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
 }
 
 export default SetupDebt
-

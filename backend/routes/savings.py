@@ -115,10 +115,9 @@ async def insert_savings_bulk(
 
             row = await conn.fetchrow(
                 """
-                INSERT INTO savings (user_id, category, amount, interest_rate, compound, deposit, deposit_frequency, maturity_date)
-                VALUES ($1, $2, $3, 1, 'COMPOUND', 0, YEARLY, NULL)
-                RETURNING id, user_id, category::text AS category, amount, interest_rate, compound::text AS compound,
-                          deposit, deposit_frequency::text AS deposit_frequency, maturity_date, created_at, updated_at
+                INSERT INTO savings (user_id, category, amount)
+                VALUES ($1, $2, $3)
+                RETURNING id, user_id, category::text AS category, amount, created_at, updated_at
                 """,
                 current_user.id,
                 item.category.upper(),

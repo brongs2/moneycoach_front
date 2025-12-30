@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 import asyncpg
 from backend.db import get_db_connection
-from backend.schemas.schemas import AssetCreate, AssetUpdate, AssetOut
+from backend.schemas.schemas import AssetCreate, AssetUpdate, AssetOut, AssetBulkCreate
 from backend.auth import get_current_user, CurrentUser
 
 router = APIRouter(prefix="/assets", tags=["assets"])
@@ -23,7 +23,70 @@ async def get_assets_data(user_id: int, conn: asyncpg.Connection):
         """,
         user_id,
     )
+@router.post("/bulk")
+async def insert_assets_bulk(
+    payload: AssetBulkCreate,
+    current_user: CurrentUser = Depends(get_current_user),
+    conn: asyncpg.Connection = Depends(get_db_connection),
+):
+    if not payload.items:
+        raise HTTPException(status_code=400, detail="items is required")
 
+    async with conn.transaction():
+        rows = []
+        for item in payload.items:
+            if not item.category:
+                raise HTTPException(status_code=400, detail="category is required")
+
+            row = await conn.fetchrow(
+                """
+                INSERT INTO assets (
+                    user_id, category, amount,
+                    loan_amount, interest_rate, repay_amount,
+                    roi, dividend
+                )
+                VALUES (
+                    $1, $2, $3,
+                    COALESCE($4, 0), COALESCE($5, 0), COALESCE($6, 0),
+                    0, 0
+                )
+                RETURNING
+                    id,
+                    user_id,
+                    category::text AS category,
+                    interest_rate,
+                    roi,
+                    dividend,
+                    amount,
+                    loan_amount,
+                    repay_amount,
+                    created_at,
+                    updated_at
+                """,
+                current_user.id,
+                item.category,          # enum이면 .value 필요할 수도 있음(아래 참고)
+                item.amount,
+                item.loan_amount,
+                item.interest_rate,
+                item.repay_amount,
+            )
+            rows.append(row)
+
+    return {
+        "ok": True,
+        "created": [
+            {
+                **dict(r),
+                "amount": float(r["amount"]),
+                "loan_amount": float(r["loan_amount"]) if r["loan_amount"] is not None else 0.0,
+                "repay_amount": float(r["repay_amount"]) if r["repay_amount"] is not None else 0.0,
+                "interest_rate": float(r["interest_rate"]) if r["interest_rate"] is not None else 0.0,
+                "roi": float(r["roi"]) if r["roi"] is not None else 0.0,
+                "dividend": float(r["dividend"]) if r["dividend"] is not None else 0.0,
+            }
+            for r in rows
+        ],
+    }
 # ========= 목록 조회 =========
 @router.get("/", response_model=list[AssetOut])
 async def list_assets(

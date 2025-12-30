@@ -31,6 +31,7 @@ class UserOut(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+
 # ===== Savings =====
 class SavingCreate(BaseModel):
     category: SavingType
@@ -77,7 +78,12 @@ class InvestmentCreate(BaseModel):
     deposit: Optional[float] = 0.0
     deposit_frequency: Optional[FrequencyType] = None
     maturity_date: Optional[date] = None
+class InvestmentBulkItem(BaseModel):
+    category: InvestType
+    amount: float
 
+class InvestmentBulkCreate(BaseModel):
+    items: List[InvestmentBulkItem]
 class InvestmentUpdate(BaseModel):
     category: Optional[InvestType] = None
     amount: Optional[float] = None
@@ -131,7 +137,15 @@ class AssetOut(BaseModel):
     repay_amount: Optional[float]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+class AssetBulkItem(BaseModel):
+    category: AssetType
+    amount: float
+    loan_amount: Optional[float] = 0.0
+    interest_rate: Optional[float] = 0.0
+    repay_amount: Optional[float] = 0.0
 
+class AssetBulkCreate(BaseModel):
+    items: List[AssetBulkItem]
 # ===== Debts (Currency 필드 전체 제거) =====
 class DebtCreate(BaseModel):
     category: DebtType
@@ -157,7 +171,15 @@ class DebtOut(BaseModel):
     compound: Compound
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+class DebtBulkItem(BaseModel):
+    category: DebtType
+    loan_amount: float
+    repay_amount: float
+    interest_rate: float
+    compound: Optional[Compound] = "COMPOUND"
 
+class DebtBulkCreate(BaseModel):
+    items: List[DebtBulkItem]
 # ===== Revenues (start_date, end_date 추가) =====
 class RevenueCreate(BaseModel):
     plan_id: int

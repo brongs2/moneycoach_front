@@ -3,7 +3,7 @@ import asyncpg
 from typing import Optional
 
 from backend.db import get_db_connection
-from backend.schemas.schemas import DebtCreate, DebtUpdate, DebtOut
+from backend.schemas.schemas import DebtCreate, DebtUpdate, DebtOut, DebtBulkCreate  
 from backend.auth import get_current_user, CurrentUser
 
 router = APIRouter(prefix="/debts", tags=["debts"])
@@ -88,6 +88,62 @@ async def insert_debt(
     res["interest_rate"] = float(res["interest_rate"])
     return res
 
+
+@router.post("/bulk")
+async def insert_debts_bulk(
+    payload: DebtBulkCreate,
+    current_user: CurrentUser = Depends(get_current_user),
+    conn: asyncpg.Connection = Depends(get_db_connection),
+):
+    if not payload.items:
+        raise HTTPException(status_code=400, detail="items is required")
+
+    async with conn.transaction():
+        rows = []
+        for item in payload.items:
+            if not item.category:
+                raise HTTPException(status_code=400, detail="category is required")
+
+            row = await conn.fetchrow(
+                """
+                INSERT INTO debts (
+                    user_id, category, loan_amount, repay_amount, interest_rate, compound
+                )
+                VALUES (
+                    $1, $2, $3, $4, $5, $6
+                )
+                RETURNING
+                    id,
+                    user_id,
+                    category::text AS category,
+                    loan_amount,
+                    repay_amount,
+                    interest_rate,
+                    compound::text AS compound,
+                    created_at,
+                    updated_at
+                """,
+                current_user.id,
+                item.category,       # enum이면 .value 필요할 수 있음(아래 참고)
+                item.loan_amount,
+                item.repay_amount,
+                item.interest_rate,
+                (item.compound.value if hasattr(item.compound, "value") else item.compound) or "COMPOUND",
+            )
+            rows.append(row)
+
+    return {
+        "ok": True,
+        "created": [
+            {
+                **dict(r),
+                "loan_amount": float(r["loan_amount"]),
+                "repay_amount": float(r["repay_amount"]),
+                "interest_rate": float(r["interest_rate"]),
+            }
+            for r in rows
+        ],
+    }
 # ========= 부분 수정 =========
 @router.patch("/{debt_id}", response_model=DebtOut)
 async def update_debt(
