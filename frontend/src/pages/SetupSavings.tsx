@@ -14,11 +14,9 @@ interface SavingsItem {
 interface SetupSavingsProps {
   onComplete: (data: any) => void
   onBack: () => void
-  isLast?: boolean
-  onGoToMain?: () => void
 }
 
-const SetupSavings = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupSavingsProps) => {
+const SetupSavings = ({ onComplete, onBack }: SetupSavingsProps) => {
   const [items, setItems] = useState<SavingsItem[]>([
     { id: '1', type: '일반 예금', amount: 0 }
   ])
@@ -50,16 +48,9 @@ const SetupSavings = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupS
     })
   }
 
-  const handleFinish = () => {
-    handleNext()
-    if (onGoToMain) {
-      onGoToMain()
-    }
-  }
-
   useEffect(() => {
     const checkSpacing = () => {
-      if (formRef.current && !isLast) {
+      if (formRef.current) {
         const container = formRef.current.closest('.setup-container')
         
         if (container) {
@@ -88,7 +79,7 @@ const SetupSavings = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupS
       window.removeEventListener('resize', checkSpacing)
       clearTimeout(timer)
     }
-  }, [items, isLast])
+  }, [items])
 
   return (
     <div className="setup-savings">
@@ -144,12 +135,8 @@ const SetupSavings = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupS
             <button className="add-more-button" onClick={handleAddMore}>+ 추가하기</button>
           </div>
 
-          <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''} ${isLast ? 'fixed' : ''}`}>
-            {isLast ? (
-              <ContentBlueButton label="메인 화면으로 가기" onClick={handleFinish} />
-            ) : (
-              <ContentBlueButton label="다음" onClick={handleNext} />
-            )}
+          <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''}`}>
+            <ContentBlueButton label="다음" onClick={handleNext} />
           </div>
         </div>
       </div>

@@ -19,7 +19,7 @@ const ContentToggleButton = ({
 
   return (
     <div className="content-toggle-button">
-      <label className="content-label">{label}</label>
+      {label && <label className="content-label">{label}</label>}
       <div className="toggle-container">
         <div className="toggle-background">
           <button

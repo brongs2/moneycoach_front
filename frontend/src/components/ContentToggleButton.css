@@ -5,12 +5,20 @@
   width: 100%;
 }
 
+.content-toggle-button:has(.content-label:empty) {
+  gap: 0;
+}
+
 .content-label {
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 400;
   font-size: 14px;
   color: var(--black, #333);
   line-height: normal;
+}
+
+.content-label:empty {
+  display: none;
 }
 
 .toggle-container {

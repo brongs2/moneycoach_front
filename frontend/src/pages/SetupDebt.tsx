@@ -11,58 +11,70 @@ interface DebtItem {
   type: string
   category: string
   amount: number
+  interestRate?: number
+  monthlyPayment?: number
 }
 
 interface SetupDebtProps {
   onComplete: (data: any) => void
   onBack: () => void
-  isLast?: boolean
-  onGoToMain?: () => void
 }
 
-const SetupDebt = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupDebtProps) => {
-  const [items, setItems] = useState<DebtItem[]>([
-    { id: '1', type: '학자금 대출', category: '대출', amount: 0 }
-  ])
+const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
+  const [completedItems, setCompletedItems] = useState<DebtItem[]>([])
+  const [currentItem, setCurrentItem] = useState<DebtItem>({
+    id: 'current',
+    type: '학자금 대출',
+    category: '대출',
+    amount: 0
+  })
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
 
   const debtTypes = ['학자금 대출', '신용 대출', '주택 대출', '기타']
-  const debtCategories = ['대출', '신용카드']
+  const debtCategories: [string, string] = ['단리', '복리']
 
   const handleAddMore = () => {
-    const newId = Date.now().toString()
-    setItems([...items, { id: newId, type: '학자금 대출', category: '대출', amount: 0 }])
+    // 현재 입력 중인 항목을 완료된 항목 목록에 추가
+    const itemToAdd = { ...currentItem, id: Date.now().toString() }
+    setCompletedItems([...completedItems, itemToAdd])
+    
+    // 새로운 빈 항목으로 초기화
+    setCurrentItem({
+      id: 'current',
+      type: '학자금 대출',
+      category: '대출',
+      amount: 0
+    })
   }
 
-  const handleItemChange = (id: string, field: 'type' | 'category' | 'amount', value: string | number) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ))
+  const handleItemChange = (field: 'type' | 'category' | 'amount' | 'interestRate' | 'monthlyPayment', value: string | number) => {
+    const updated = { ...currentItem, [field]: value }
+    // category가 '신용카드'로 변경되면 이자율/월 상환액 필드 초기화 (필요시)
+    // 현재는 모든 category에서 이자율/월 상환액을 입력할 수 있도록 함
+    setCurrentItem(updated)
   }
 
-  const handleDeleteItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id))
+  const handleDeleteCompletedItem = (id: string) => {
+    setCompletedItems(completedItems.filter(item => item.id !== id))
   }
 
   const handleNext = () => {
-    const total = items.reduce((sum, item) => sum + item.amount, 0)
+    // 완료된 항목과 현재 항목을 합쳐서 전달
+    const allItems = currentItem.amount > 0 
+      ? [...completedItems, currentItem]
+      : completedItems
+    
+    const total = allItems.reduce((sum, item) => sum + item.amount, 0)
     onComplete({
-      items: items.filter(item => item.amount > 0),
+      items: allItems.filter(item => item.amount > 0),
       total,
     })
   }
 
-  const handleFinish = () => {
-    handleNext()
-    if (onGoToMain) {
-      onGoToMain()
-    }
-  }
-
   useEffect(() => {
     const checkSpacing = () => {
-      if (formRef.current && !isLast) {
+      if (formRef.current) {
         const container = formRef.current.closest('.setup-container')
         
         if (container) {
@@ -91,7 +103,7 @@ const SetupDebt = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupDebt
       window.removeEventListener('resize', checkSpacing)
       clearTimeout(timer)
     }
-  }, [items, isLast])
+  }, [completedItems, currentItem])
 
   return (
     <div className="setup-debt">
@@ -116,49 +128,93 @@ const SetupDebt = ({ onComplete, onBack, isLast = false, onGoToMain }: SetupDebt
           </div>
 
           <div ref={formRef} className="setup-form setup-form-spaced">
-            {items.map((item) => (
-              <div key={item.id} className="debt-item">
-                <div className="debt-input-row">
-                  <select 
-                    className="debt-type-select"
-                    value={item.type}
-                    onChange={(e) => handleItemChange(item.id, 'type', e.target.value)}
-                  >
-                    {debtTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                  <AmountInput
-                    value={item.amount}
-                    onChange={(value) => handleItemChange(item.id, 'amount', value)}
-                  />
+            {/* 완료된 항목들 요약 표시 */}
+            {completedItems.map((item) => (
+              <div key={item.id} className="debt-summary">
+                <div className="debt-summary-content">
+                  <span className="summary-text">
+                    {item.type}, {item.amount >= 10000 
+                      ? `${(item.amount / 10000).toFixed(1)}억`
+                      : `${item.amount}만원`}
+                    {item.interestRate && item.interestRate > 0 && `, 이자율 ${item.interestRate}%`}
+                    {item.monthlyPayment && item.monthlyPayment > 0 && (
+                      <>, 월 상환액 {item.monthlyPayment >= 10000 
+                        ? `${(item.monthlyPayment / 10000).toFixed(1)}억`
+                        : `${item.monthlyPayment}만원`}</>
+                    )}
+                  </span>
                   <button 
-                    className="debt-delete-button"
-                    onClick={() => handleDeleteItem(item.id)}
+                    className="debt-summary-delete"
+                    onClick={() => handleDeleteCompletedItem(item.id)}
                     type="button"
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                       <path d="M18 6L6 18M6 6l12 12" stroke="#bcbcbc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
                 </div>
-                <ContentToggleButton
-                  label="부채 유형"
-                  options={debtCategories}
-                  value={item.category}
-                  onChange={(value) => handleItemChange(item.id, 'category', value)}
-                />
               </div>
             ))}
+
+            {/* 현재 입력 중인 항목 */}
+            <div className="debt-item">
+              <div className="debt-input-row">
+                <select 
+                  className="debt-type-select"
+                  value={currentItem.type}
+                  onChange={(e) => handleItemChange('type', e.target.value)}
+                >
+                  {debtTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <AmountInput
+                  value={currentItem.amount}
+                  onChange={(value) => handleItemChange('amount', value)}
+                />
+              </div>
+              <ContentToggleButton
+                label="부채 유형"
+                options={debtCategories}
+                value={currentItem.category}
+                onChange={(value) => handleItemChange('category', value)}
+              />
+              <div className="debt-additional-fields">
+                <div className="debt-field-row debt-field-row-inline">
+                  <div className="debt-field-half">
+                    <label className="debt-field-label">이자율</label>
+                    <div className="interest-rate-input-container">
+                      <input
+                        type="number"
+                        className="interest-rate-input"
+                        value={currentItem.interestRate || ''}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                          handleItemChange('interestRate', value)
+                        }}
+                        placeholder="0"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                      />
+                      <span className="interest-rate-unit">%</span>
+                    </div>
+                  </div>
+                  <div className="debt-field-half">
+                    <label className="debt-field-label">월 상환액</label>
+                    <AmountInput
+                      value={currentItem.monthlyPayment || 0}
+                      onChange={(value) => handleItemChange('monthlyPayment', value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
             <button className="add-more-button" onClick={handleAddMore}>+ 추가하기</button>
           </div>
 
-          <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''} ${isLast ? 'fixed' : ''}`}>
-            {isLast ? (
-              <ContentBlueButton label="메인 화면으로 가기" onClick={handleFinish} />
-            ) : (
-              <ContentBlueButton label="다음" onClick={handleNext} />
-            )}
+          <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''}`}>
+            <ContentBlueButton label="다음" onClick={handleNext} />
           </div>
         </div>
       </div>

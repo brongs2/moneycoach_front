@@ -153,7 +153,7 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
             />
           ) : (
             <ContentBlueButton 
-              label="계획 세우기" 
+              label="메인 화면으로 가기" 
               onClick={onGoToMain}
               style={{ width: '284px' }}
             />
