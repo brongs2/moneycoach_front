@@ -110,26 +110,39 @@
 
 .lifestyle-grid {
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px; /* row gap */
+}
+
+.lifestyle-row {
+  display: flex;
+  justify-content: center;
+  gap: 22px; /* column gap */
 }
 
 .lifestyle-button {
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 500;
   font-size: 18px;
+  line-height: 1.3;
   color: var(--moneyblue, #4068ff);
   background-color: var(--lightgray, #f1f1f1);
   border: none;
   border-radius: 21px;
-  padding: 8px 24px;
+  padding: 8px 24px; /* 상하 8px, 좌우 24px */
   cursor: pointer;
   transition: all 0.2s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 37px;
+  min-height: 44px;
+  text-align: center;
+  white-space: nowrap; /* 한 줄 유지하여 내용 길이만큼만 폭 결정 */
+  word-break: keep-all;
+  overflow: visible;
+  width: auto;
 }
 
 .lifestyle-button:hover {

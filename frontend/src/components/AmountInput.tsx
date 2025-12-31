@@ -5,9 +5,17 @@ interface AmountInputProps {
   value: number
   onChange: (value: number) => void
   placeholder?: string
+  showUnit?: boolean
+  unitText?: string
 }
 
-const AmountInput = ({ value, onChange, placeholder = '0' }: AmountInputProps) => {
+const AmountInput = ({
+  value,
+  onChange,
+  placeholder = '0',
+  showUnit = true,
+  unitText = '만원'
+}: AmountInputProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const expandedContentRef = useRef<HTMLDivElement>(null)
@@ -68,6 +76,16 @@ const AmountInput = ({ value, onChange, placeholder = '0' }: AmountInputProps) =
 
   // 일반 모드에서 표시할 값 포맷팅 (단위 포함)
   const formatDisplayValue = () => {
+    if (!showUnit) {
+      // 외부에서 단위를 보여줄 때는 숫자만 표시
+      if (value === 0) return '0'
+      if (value >= 10000) {
+        const eok = value / 10000
+        return `${eok.toFixed(1)}억`
+      }
+      return value.toLocaleString('ko-KR')
+    }
+
     if (value === 0) return '0만원'
     
     if (value >= 10000) {
@@ -81,20 +99,30 @@ const AmountInput = ({ value, onChange, placeholder = '0' }: AmountInputProps) =
 
   // 확대 모드에서 표시할 값 (4자리 이상이면 0억 0000만원 형식)
   const formatExpandedValue = () => {
-    if (inputValue === '') return '0만원'
+    const numValue = parseInt(inputValue || '0', 10) || 0
+
+    if (!showUnit) {
+      if (numValue >= 10000) {
+        const eok = Math.floor(numValue / 10000)
+        const manwon = numValue % 10000
+        return `${eok}억 ${manwon.toString().padStart(4, '0')}${unitText ? ` ${unitText}` : ''}`
+      }
+      return `${numValue.toLocaleString('ko-KR')}${unitText ? ` ${unitText}` : ''}`
+    }
+
+    if (inputValue === '') return `0${unitText}`
     
-    const numValue = parseInt(inputValue, 10) || 0
     // 10000 이상이면 억 단위로 표시 (0억 0000만원 형식)
     if (numValue >= 10000) {
       const eok = Math.floor(numValue / 10000)
       const manwon = numValue % 10000
-      return `${eok}억 ${manwon.toString().padStart(4, '0')}만원`
+      return `${eok}억 ${manwon.toString().padStart(4, '0')}${unitText}`
     }
     // 1000 이상 10000 미만이면 4자리 패딩으로 표시
     if (numValue >= 1000) {
-      return `${numValue.toString().padStart(4, '0')}만원`
+      return `${numValue.toString().padStart(4, '0')}${unitText}`
     }
-    return `${numValue}만원`
+    return `${numValue}${unitText}`
   }
 
   return (
@@ -110,7 +138,7 @@ const AmountInput = ({ value, onChange, placeholder = '0' }: AmountInputProps) =
             readOnly
             className="amount-input"
             value={formatDisplayValue()}
-            placeholder={placeholder || '0만원'}
+            placeholder={placeholder || (showUnit ? '0만원' : '0')}
           />
         </div>
       </div>
@@ -127,7 +155,7 @@ const AmountInput = ({ value, onChange, placeholder = '0' }: AmountInputProps) =
               <button className="amount-confirm-button" onClick={handleConfirm}>확인</button>
             </div>
             <div className="amount-input-expanded-display">
-              <div className="amount-expanded-value">{formatExpandedValue() || '0만원'}</div>
+              <div className="amount-expanded-value">{formatExpandedValue() || (showUnit ? '0만원' : '0')}</div>
               <button
                 type="button"
                 className="amount-delete-button"

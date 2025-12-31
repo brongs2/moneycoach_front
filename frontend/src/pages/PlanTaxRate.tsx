@@ -10,9 +10,12 @@ interface PlanTaxRateProps {
 }
 
 const PlanTaxRate = ({ onNext, onBack }: PlanTaxRateProps) => {
+  const [taxCategory, setTaxCategory] = useState('소득세')
   const [taxRate, setTaxRate] = useState('')
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
+
+  const taxCategories = ['소득세', '종합소득세', '기타']
 
   const handleNext = () => {
     if (taxRate !== '' && parseFloat(taxRate) > 0) {
@@ -72,18 +75,29 @@ const PlanTaxRate = ({ onNext, onBack }: PlanTaxRateProps) => {
           </div>
 
           <div ref={formRef} className="setup-form setup-form-spaced">
-            <div className="tax-rate-input-wrapper">
-              <input
-                type="text"
-                className={`tax-rate-input ${isTaxRateFilled ? 'filled' : ''}`}
-                placeholder="00"
-                value={taxRate}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9.]/g, '')
-                  setTaxRate(value)
-                }}
-              />
-              <span className="tax-rate-unit">%</span>
+            <div className="tax-rate-input-row">
+              <select
+                className="tax-rate-category-select"
+                value={taxCategory}
+                onChange={(e) => setTaxCategory(e.target.value)}
+              >
+                {taxCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <div className="tax-rate-amount-group">
+                <input
+                  type="text"
+                  className={`tax-rate-input ${isTaxRateFilled ? 'filled' : ''}`}
+                  placeholder="00"
+                  value={taxRate}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.]/g, '')
+                    setTaxRate(value)
+                  }}
+                />
+                <span className="tax-rate-unit">%</span>
+              </div>
             </div>
           </div>
 

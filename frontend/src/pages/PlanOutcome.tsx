@@ -112,11 +112,15 @@ const PlanOutcome = ({ onNext, onBack }: PlanOutcomeProps) => {
                       <option key={category} value={category}>{category}</option>
                     ))}
                   </select>
-                  <AmountInput
-                    value={item.amount}
-                    onChange={(value) => handleItemChange(item.id, 'amount', value)}
-                  />
-                  <span className="outcome-unit">만원/년</span>
+                  <div className="outcome-amount-group">
+                    <AmountInput
+                      value={item.amount}
+                      onChange={(value) => handleItemChange(item.id, 'amount', value)}
+                      showUnit={false}
+                      unitText="만원/년"
+                    />
+                    <span className="outcome-unit">만원/년</span>
+                  </div>
                   <button 
                     className="outcome-delete-button"
                     onClick={() => handleDeleteItem(item.id)}

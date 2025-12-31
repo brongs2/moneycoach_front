@@ -21,6 +21,11 @@ const PlanLifestyle = ({ onNext, onBack }: PlanLifestyleProps) => {
     '욜로', '균형적인', '현금확보'
   ]
 
+  const lifestyleRows = Array.from(
+    { length: Math.ceil(lifestyleOptions.length / 3) },
+    (_, i) => lifestyleOptions.slice(i * 3, i * 3 + 3)
+  )
+
   const handleLifestyleToggle = (lifestyle: string) => {
     const newSelected = new Set(selectedLifestyles)
     if (newSelected.has(lifestyle)) {
@@ -90,15 +95,19 @@ const PlanLifestyle = ({ onNext, onBack }: PlanLifestyleProps) => {
 
           <div ref={formRef} className="setup-form setup-form-spaced">
             <div className="lifestyle-grid">
-              {lifestyleOptions.map((lifestyle) => (
-                <button
-                  key={lifestyle}
-                  className={`lifestyle-button ${selectedLifestyles.has(lifestyle) ? 'selected' : ''}`}
-                  onClick={() => handleLifestyleToggle(lifestyle)}
-                  type="button"
-                >
-                  {lifestyle}
-                </button>
+              {lifestyleRows.map((row, rowIdx) => (
+                <div className="lifestyle-row" key={rowIdx}>
+                  {row.map((lifestyle) => (
+                    <button
+                      key={lifestyle}
+                      className={`lifestyle-button ${selectedLifestyles.has(lifestyle) ? 'selected' : ''}`}
+                      onClick={() => handleLifestyleToggle(lifestyle)}
+                      type="button"
+                    >
+                      {lifestyle}
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
