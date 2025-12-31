@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import json
+from collections import defaultdict
 from datetime import date
 
 from backend.db import get_db_connection
@@ -54,23 +55,91 @@ def _real_return(roi_pct, dividend_pct, inflation_pct) -> float:
 
     return ((1.0 + roi) * (1.0 + div)) / denom - 1.0
 
+LIFESTYLE_RULES = {
+    "비상금":        ("EMERGENCY", "SAVINGS", 40),
+    "현금확보":      ("CASH",      "SAVINGS", 40),
+    "안전자산":      ("SAFETY",    "SAVINGS", 30),
 
+    "공격투자":      ("INVEST",    "INVEST", 40),
+    "욜로":          ("SPEND",    "SPEND", 30),
+    "사치":          ("INVEST",    "INVEST", 30),
+
+    "빚청산":        ("DEBT_PAYDOWN", "DEBT", 40),
+
+    "은퇴준비":      ("SAVINGS", "SAVINGS", 20),
+    "내집마련":      ("SAVINGS",       "SAVINGS", 20),
+    "밸런스":        ("SAVINGS",   "SAVINGS", 20),
+    "균형적인":      ("SAVINGS",   "SAVINGS", 20),
+    "목표달성":      ("SAVINGS",       "SAVINGS", 20),
+}
+
+DEFAULT_ALLOCATION = {"bucket": "SAVINGS", "type": "SAVINGS", "weight": 100}
+def normalize_to_1(weights: dict[str, float]) -> dict[str, float]:
+    total = sum(weights.values())
+    if total <= 0:
+        return {"SAVINGS": 1.0}
+
+    scaled = {k: v / total for k, v in weights.items()}
+
+    # 부동소수점 오차 보정
+    diff = 1.0 - sum(scaled.values())
+    if abs(diff) > 1e-9:
+        k_max = max(scaled, key=scaled.get)
+        scaled[k_max] += diff
+
+    return scaled
+
+def lifestyle_to_priority(lifestyles: list[str]) -> dict:
+    type_weights = defaultdict(float)
+    bucket_choice = None
+
+    for name in lifestyles:
+        rule = LIFESTYLE_RULES.get(name)
+        if not rule:
+            continue
+
+        bucket, type_, w = rule
+        bucket_choice = bucket_choice or bucket
+        type_weights[type_] += float(w)
+
+    # 아무 매칭도 없으면 기본
+    if not type_weights:
+        return {"allocations": [DEFAULT_ALLOCATION]}
+
+    normalized = normalize_to_1(type_weights)
+    bucket_choice = bucket_choice or "BASE"
+
+    allocations = [
+        {
+            "bucket": bucket_choice,
+            "type": type_,
+            "weight": weight,   # ✅ 0~1 float
+        }
+        for type_, weight in normalized.items()
+        if weight > 0
+    ]
+
+    if not allocations:
+        allocations = [DEFAULT_ALLOCATION]
+
+    return {"allocations": allocations}
 @router.post("/", response_model=PlanOut)
 async def create_plan(
     payload: PlanCreate,
     current_user: CurrentUser = Depends(get_current_user),
-    conn: Session = Depends(get_db_connection),
+    conn = Depends(get_db_connection),
 ):
     title = payload.title
     description = payload.description
 
-    # 추가된 컬럼들
     roi = getattr(payload, "roi", None)
     dividend = getattr(payload, "dividend", None)
     inflation = getattr(payload, "inflation", None)
 
+    # ✅ lifestyle → priority 변환
+    priority_obj = lifestyle_to_priority(payload.lifestyle)   # dict: {"allocations":[...]}
+
     async with conn.transaction():
-        # Plan 생성
         row = await conn.fetchrow(
             """
             INSERT INTO plans
@@ -79,9 +148,16 @@ async def create_plan(
                 ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id, user_id, title, roi, dividend, inflation, description, priority, created_at, updated_at
             """,
-            current_user.id, title, roi, dividend, inflation, description, payload.priority.json()  # priority를 JSON 형식으로 저장
+            current_user.id,
+            title,
+            roi,
+            dividend,
+            inflation,
+            description,
+            json.dumps(priority_obj),         # ✅ priority JSON 저장
         )
-
+    if row["priority"]:
+        priority_obj = json.loads(row["priority"]) 
     return {
         "id": row["id"],
         "user_id": row["user_id"],
@@ -90,7 +166,7 @@ async def create_plan(
         "dividend": row["dividend"],
         "inflation": row["inflation"],
         "description": row["description"],
-        "priority": row["priority"],  # priority 값도 반환
+        "priority": priority_obj,
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
     }
@@ -98,7 +174,6 @@ async def create_plan(
 
 
 
-@router.get("/{plan_id}")
 @router.get("/{plan_id}")
 async def get_plan_details(
     plan_id: int,
@@ -642,25 +717,22 @@ async def create_tax(
 
     async with conn.transaction():
         row = await conn.fetchrow(
-            """
-            INSERT INTO taxes
-                (plan_id, category)
-            VALUES
-                ($1,      $2)
-            RETURNING
-                id,
-                plan_id,
-                category,
-                created_at,
-                updated_at
-            """,
-            plan_id,
-            category,
-        )
+        """
+        INSERT INTO taxes (plan_id, category, rate, frequency)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, plan_id, category, rate, frequency, created_at, updated_at
+        """,
+        plan_id,
+        payload.category,
+        payload.rate,
+        payload.frequency,
+    )
 
     return {
         "id": row["id"],
         "plan_id": row["plan_id"],
+        "rate": row["rate"],
+        "frequency": row["frequency"],
         "category": row["category"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],

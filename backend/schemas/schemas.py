@@ -238,14 +238,18 @@ class ExpenseOut(BaseModel):
 # ===== Taxes =====
 
 class TaxCreate(BaseModel):
+    plan_id: int
     category: TaxType
     rate: float = 0.0          # 세금 비율 (%)
     frequency: FrequencyType = "YEARLY"  # 기본값 연 단위로 설정
+
 
 class TaxUpdate(BaseModel):
     category: Optional[TaxType] = None
     rate: Optional[float] = None
     frequency: Optional[FrequencyType] = None
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
 
 class TaxOut(BaseModel):
     id: int
@@ -265,7 +269,7 @@ class PlanCreate(BaseModel):
     inflation: Optional[float] = None
     retirement_year: int
     expected_death_year: int
-    priority: Optional[PlanPriority] = None
+    lifestyle: List[str]
 
 class PlanUpdate(BaseModel):
     title: Optional[str] = None
@@ -282,11 +286,11 @@ class PlanOut(BaseModel):
     user_id: int
     title: str
     description: Optional[str] = None
-    retirement_year: int
-    expected_death_year: int
+    retirement_year: int | None = None
+    expected_death_year: int | None = None
     roi: Optional[float] = None
     dividend: Optional[float] = None
     inflation: Optional[float] = None
     priority: Optional[PlanPriority] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]

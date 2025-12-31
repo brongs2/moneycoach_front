@@ -16,6 +16,8 @@ import PlanOutcome from './pages/PlanOutcome'
 import PlanTaxRate from './pages/PlanTaxRate'
 import PlanLifestyle from './pages/PlanLifestyle'
 import './App.css'
+// api/plans.ts
+import type { PlanDetailResponse } from './types/plan'
 
 import type {
   PlanState,
@@ -233,78 +235,78 @@ function App() {
         })
       }
 
-      // 자산 bulk 전송(필요한 것만)
-      if (selectedAssets.has('savings')) {
-        const savingsCategoryMap: Record<string, string> = {
-          '일반 예금': 'DEPOSIT',
-          적금: 'SAVING',
-          청약: 'SUBSCRIPTION',
-          기타: 'ETC',
-        }
-        await postJson(`${API}/savings/bulk`, {
-          items: (assetData.savings?.items ?? [])
-            .map((it: any) => ({
-              category: savingsCategoryMap[it.category] ?? it.category,
-              amount: Number(it.amount ?? 0),
-            }))
-            .filter((x: any) => x.amount > 0),
-        })
-      }
+      // // 자산 bulk 전송(필요한 것만)
+      // if (selectedAssets.has('savings')) {
+      //   const savingsCategoryMap: Record<string, string> = {
+      //     '일반 예금': 'DEPOSIT',
+      //     적금: 'SAVING',
+      //     청약: 'SUBSCRIPTION',
+      //     기타: 'ETC',
+      //   }
+      //   await postJson(`${API}/savings/bulk`, {
+      //     items: (assetData.savings?.items ?? [])
+      //       .map((it: any) => ({
+      //         category: savingsCategoryMap[it.category] ?? it.category,
+      //         amount: Number(it.amount ?? 0),
+      //       }))
+      //       .filter((x: any) => x.amount > 0),
+      //   })
+      // }
 
-      if (selectedAssets.has('investment')) {
-        const investmentCategoryMap: Record<string, string> = {
-          주식: 'STOCK',
-          부동산: 'REAL_ESTATE',
-          암호화폐: 'CRYPTO',
-          기타: 'ETC',
-        }
-        await postJson(`${API}/investments/bulk`, {
-          items: (assetData.investment?.items ?? [])
-            .map((it: any) => ({
-              category: investmentCategoryMap[it.category] ?? it.category,
-              amount: Number(it.amount ?? 0),
-            }))
-            .filter((x: any) => x.amount > 0),
-        })
-      }
+      // if (selectedAssets.has('investment')) {
+      //   const investmentCategoryMap: Record<string, string> = {
+      //     주식: 'STOCK',
+      //     부동산: 'REAL_ESTATE',
+      //     암호화폐: 'CRYPTO',
+      //     기타: 'ETC',
+      //   }
+      //   await postJson(`${API}/investments/bulk`, {
+      //     items: (assetData.investment?.items ?? [])
+      //       .map((it: any) => ({
+      //         category: investmentCategoryMap[it.category] ?? it.category,
+      //         amount: Number(it.amount ?? 0),
+      //       }))
+      //       .filter((x: any) => x.amount > 0),
+      //   })
+      // }
 
-      if (selectedAssets.has('tangible')) {
-        const assetCategoryMap: Record<string, string> = {
-          집: 'HOUSE',
-          오피스텔: 'OFFICETEL',
-          상가: 'STORE',
-          기타: 'ETC',
-        }
-        await postJson(`${API}/assets/bulk`, {
-          items: (assetData.tangible?.items ?? []).map((it: any) => ({
-            category: assetCategoryMap[it.category] ?? it.category,
-            amount: Number(it.amount ?? 0),
-            loan_amount: Number(it.loan_amount ?? 0),
-            interest_rate: Number(it.interest_rate ?? 0),
-            repay_amount: Number(it.repay_amount ?? 0),
-          })),
-        })
-      }
+      // if (selectedAssets.has('tangible')) {
+      //   const assetCategoryMap: Record<string, string> = {
+      //     집: 'HOUSE',
+      //     오피스텔: 'OFFICETEL',
+      //     상가: 'STORE',
+      //     기타: 'ETC',
+      //   }
+      //   await postJson(`${API}/assets/bulk`, {
+      //     items: (assetData.tangible?.items ?? []).map((it: any) => ({
+      //       category: assetCategoryMap[it.category] ?? it.category,
+      //       amount: Number(it.amount ?? 0),
+      //       loan_amount: Number(it.loan_amount ?? 0),
+      //       interest_rate: Number(it.interest_rate ?? 0),
+      //       repay_amount: Number(it.repay_amount ?? 0),
+      //     })),
+      //   })
+      // }
 
-      if (selectedAssets.has('debt')) {
-        const debtCategoryMap: Record<string, string> = {
-          '학자금 대출': 'STUDENT_LOAN',
-          '신용 대출': 'CREDIT',
-          '주택 대출': 'MORTGAGE',
-          기타: 'ETC',
-        }
-        await postJson(`${API}/debts/bulk`, {
-          items: (assetData.debt?.items ?? [])
-            .map((it: any) => ({
-              category: debtCategoryMap[it.category] ?? it.category,
-              loan_amount: Number(it.loan_amount ?? 0),
-              repay_amount: Number(it.repay_amount ?? 0),
-              interest_rate: Number(it.interest_rate ?? 0),
-              compound: it.compound ?? 'COMPOUND',
-            }))
-            .filter((x: any) => x.loan_amount > 0),
-        })
-      }
+      // if (selectedAssets.has('debt')) {
+      //   const debtCategoryMap: Record<string, string> = {
+      //     '학자금 대출': 'STUDENT_LOAN',
+      //     '신용 대출': 'CREDIT',
+      //     '주택 대출': 'MORTGAGE',
+      //     기타: 'ETC',
+      //   }
+      //   await postJson(`${API}/debts/bulk`, {
+      //     items: (assetData.debt?.items ?? [])
+      //       .map((it: any) => ({
+      //         category: debtCategoryMap[it.category] ?? it.category,
+      //         loan_amount: Number(it.loan_amount ?? 0),
+      //         repay_amount: Number(it.repay_amount ?? 0),
+      //         interest_rate: Number(it.interest_rate ?? 0),
+      //         compound: it.compound ?? 'COMPOUND',
+      //       }))
+      //       .filter((x: any) => x.loan_amount > 0),
+      //   })
+      // }
 
       setCurrentPage('mainPage')
     } catch (e) {
@@ -709,7 +711,7 @@ const WON_PER_MAN = 10_000
 
 function buildPlanBody(planState: any) {
   const goal = planState.goal
-  return {
+  const payLoad = {
     title: goal ? `${goal.assetType} ${goal.multiplier}배 ${goal.action}` : 'My Plan',
     description: goal ? `${goal.age}세까지 ${goal.assetType}을(를) ${goal.multiplier}배로 ${goal.action}` : '',
     roi: 0,
@@ -717,12 +719,10 @@ function buildPlanBody(planState: any) {
     inflation: 0,
     retirement_year: 0,
     expected_death_year: 0,
-    priority: {
-      allocations: [],
-      // 백엔드가 문자열 리스트를 바탕으로 priority를 계산할 수 있도록 전달
-      lifestyles: planState.lifestyle?.preferences ?? [],
-    },
+    lifestyle: planState.lifestyle?.preferences ?? [],
   }
+  console.log(payLoad)
+  return payLoad
 }
 
 function buildRevenueBodies(planId: number, planState: any) {
@@ -770,7 +770,7 @@ function buildTaxBodies(planId: number, planState: any) {
     .map((it: any) => ({
       plan_id: planId,
       category: 'INCOME_TAX',
-      rate: Number(it.taxRate),
+      rate: Number(it.taxRate) / 100,
       frequency: 'YEARLY',
     }))
 }
@@ -783,7 +783,7 @@ async function submitPlanAll(API: string, planState: any) {
   const revenues = buildRevenueBodies(planId, planState)
   const expenses = buildExpenseBodies(planId, planState)
   const taxes = buildTaxBodies(planId, planState)
-
+  console.log(taxes)
   await Promise.all([
     ...revenues.map((body) => postJson(`${API}/plans/${planId}/revenues`, body)),
     ...expenses.map((body) => postJson(`${API}/plans/${planId}/expenses`, body)),
@@ -791,4 +791,15 @@ async function submitPlanAll(API: string, planState: any) {
   ])
 
   return { planId }
+}
+
+
+
+export async function fetchPlanDetail(API: string, planId: number): Promise<PlanDetailResponse> {
+  const res = await fetch(`${API}/plans/${planId}/`, { method: 'GET' }) // 슬래시 통일 추천
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`GET /plans/${planId} failed (${res.status}) ${text}`)
+  }
+  return res.json()
 }
