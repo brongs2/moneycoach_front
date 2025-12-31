@@ -61,7 +61,7 @@ interface PersonalInfo {
 function App() {
   // 개발 환경에서는 vite proxy를 통해 /api로 프록시됨 (vite.config.ts 참고)
   // 같은 컴퓨터에서 프론트엔드와 백엔드를 모두 실행하면 자동으로 localhost:8000으로 연결됨
-  const API = '/api'
+  const API = 'http://192.168.0.20:8000/api'
 
   const [currentPage, setCurrentPage] = useState<Page>('personalInfo')
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null)

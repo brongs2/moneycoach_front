@@ -26,6 +26,9 @@ app = FastAPI(title="MoneyCoach + Figma MCP API", redirect_slashes=False)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://192.168.0.21:5173",  # 네트워크 접근용
     ],
     allow_credentials=True,
     allow_methods=["*"],

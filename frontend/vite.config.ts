@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://192.168.0.20:8000',  // 백엔드 컴퓨터 IP
         changeOrigin: true,
       },
     },
