@@ -83,6 +83,8 @@ function App() {
   // ---------------------
   const handlePersonalInfoNext = (info: PersonalInfo) => {
     setPersonalInfo(info)
+    // selectAssets 페이지로 이동할 때 선택을 초기화 (사용자가 처음부터 선택할 수 있도록)
+    setSelectedAssets(new Set())
     setCurrentPage('selectAssets')
   }
 
