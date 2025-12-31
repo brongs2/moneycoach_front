@@ -2,6 +2,7 @@ import { useState } from 'react'
 import StatusBar from '../components/StatusBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import NavigationBar from '../components/NavigationBar'
+import { SavingsIcon, InvestmentIcon, TangibleAssetIcon, DebtIcon } from '../components/AssetIcons'
 import './MyAssetPage.css'
 
 interface MyAssetPageProps {
@@ -14,11 +15,11 @@ interface MyAssetPageProps {
   hasUnfilledAssets?: boolean
 }
 
-const assetCategoryMap: Record<string, { title: string; description: string; icon: string }> = {
-  savings: { title: '저축', description: '현금, 예금 등의 현금성 자산', icon: '💰' },
-  investment: { title: '투자', description: '주식, 부동산, 암호화폐 등 투자성 자산', icon: '📈' },
-  tangible: { title: '유형자산', description: '집, 오피스텔 등의 형태가 있는 자산', icon: '🏠' },
-  debt: { title: '부채', description: '학자금 대출, 신용 대출 등 부채', icon: '💳' },
+const assetCategoryMap: Record<string, { title: string; description: string; icon: React.ReactNode }> = {
+  savings: { title: '저축', description: '현금, 예금 등의 현금성 자산', icon: <SavingsIcon selected={false} /> },
+  investment: { title: '투자', description: '주식, 부동산, 암호화폐 등 투자성 자산', icon: <InvestmentIcon selected={false} /> },
+  tangible: { title: '유형자산', description: '집, 오피스텔 등의 형태가 있는 자산', icon: <TangibleAssetIcon selected={false} /> },
+  debt: { title: '부채', description: '학자금 대출, 신용 대출 등 부채', icon: <DebtIcon selected={false} /> },
 }
 
 const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, onGoToMain, onBack, hasUnfilledAssets }: MyAssetPageProps) => {
@@ -29,15 +30,18 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
     return sum + (data?.total || 0)
   }, 0)
 
-  // 원형 그래프 데이터
-  const pieData = Array.from(selectedAssets).map(assetType => {
-    const data = assetData[assetType] || {}
-    return {
-      type: assetType,
-      value: data.total || 0,
-      ...assetCategoryMap[assetType],
-    }
-  })
+  // 원형 그래프 데이터 (값 있는 항목만, 고정된 순서)
+  const pieData = (['savings', 'investment', 'tangible', 'debt'] as const)
+    .filter(assetType => selectedAssets.has(assetType))
+    .map(assetType => {
+      const data = assetData[assetType] || {}
+      return {
+        type: assetType,
+        value: data.total || 0,
+        ...assetCategoryMap[assetType],
+      }
+    })
+    .filter(item => item.value > 0)
 
   const formatCurrency = (amount: number) => {
     if (amount === 0) return '??? 원'
@@ -77,36 +81,48 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
             <div className="pie-chart-container">
               <svg width="236" height="236" viewBox="0 0 236 236" className="pie-chart">
                 <circle cx="118" cy="118" r="110" fill="var(--lightgray, #f1f1f1)" />
-                {pieData.map((item, index) => {
-                  const percentage = totalAssets > 0 ? (item.value / totalAssets) * 100 : 0
-                  const startAngle = pieData.slice(0, index).reduce((sum, prev) => {
-                    const prevPercentage = totalAssets > 0 ? (prev.value / totalAssets) * 100 : 0
-                    return sum + (prevPercentage / 100) * 360
-                  }, 0)
-                  const endAngle = startAngle + (percentage / 100) * 360
-                  
-                  if (percentage === 0) return null
-                  
-                  const startRad = (startAngle * Math.PI) / 180
-                  const endRad = (endAngle * Math.PI) / 180
-                  const largeArcFlag = percentage > 50 ? 1 : 0
-                  
-                  const x1 = 118 + 110 * Math.cos(startRad)
-                  const y1 = 118 + 110 * Math.sin(startRad)
-                  const x2 = 118 + 110 * Math.cos(endRad)
-                  const y2 = 118 + 110 * Math.sin(endRad)
-                  
-                  return (
-                    <path
-                      key={item.type}
-                      d={`M 118 118 L ${x1} ${y1} A 110 110 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                      fill="var(--moneyblue, #4068ff)"
-                      opacity={0.7}
-                      onClick={() => onAssetClick(item.type)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  )
-                })}
+                {totalAssets > 0 && pieData.length === 1 && (
+                  <circle
+                    cx="118"
+                    cy="118"
+                    r="110"
+                    fill="var(--moneyblue, #4068ff)"
+                    opacity={0.7}
+                    onClick={() => onAssetClick(pieData[0].type)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                )}
+                {pieData.length > 1 &&
+                  pieData.map((item, index) => {
+                    const percentage = totalAssets > 0 ? (item.value / totalAssets) * 100 : 0
+                    const startAngle = pieData.slice(0, index).reduce((sum, prev) => {
+                      const prevPercentage = totalAssets > 0 ? (prev.value / totalAssets) * 100 : 0
+                      return sum + (prevPercentage / 100) * 360
+                    }, 0)
+                    const endAngle = startAngle + (percentage / 100) * 360
+                    
+                    if (percentage === 0) return null
+                    
+                    const startRad = (startAngle * Math.PI) / 180
+                    const endRad = (endAngle * Math.PI) / 180
+                    const largeArcFlag = percentage > 50 ? 1 : 0
+                    
+                    const x1 = 118 + 110 * Math.cos(startRad)
+                    const y1 = 118 + 110 * Math.sin(startRad)
+                    const x2 = 118 + 110 * Math.cos(endRad)
+                    const y2 = 118 + 110 * Math.sin(endRad)
+                    
+                    return (
+                      <path
+                        key={item.type}
+                        d={`M 118 118 L ${x1} ${y1} A 110 110 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                        fill="var(--moneyblue, #4068ff)"
+                        opacity={0.7}
+                        onClick={() => onAssetClick(item.type)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    )
+                  })}
                 <circle cx="118" cy="118" r="55" fill="var(--bgwhite, #fcfcfc)" />
                 <text x="118" y="108" textAnchor="middle" className="chart-center-label">
                   총 자산
@@ -120,26 +136,28 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
 
           <div className="my-asset-list">
             <div className="asset-list-header" />
-            {Array.from(selectedAssets).map((assetType) => {
-              const category = assetCategoryMap[assetType]
-              const data = assetData[assetType] || {}
-              return (
-                <div
-                  key={assetType}
-                  className="asset-item"
-                  onClick={() => onAssetClick(assetType)}
-                >
-                  <div className="asset-icon">{category.icon}</div>
-                  <div className="asset-info">
-                    <p className="asset-title">{category.title}</p>
-                    <p className="asset-description">{category.description}</p>
+            {(['savings', 'investment', 'tangible', 'debt'] as const)
+              .filter((assetType) => selectedAssets.has(assetType))
+              .map((assetType) => {
+                const category = assetCategoryMap[assetType]
+                const data = assetData[assetType] || {}
+                return (
+                  <div
+                    key={assetType}
+                    className="asset-item"
+                    onClick={() => onAssetClick(assetType)}
+                  >
+                    <div className="asset-icon">{category.icon}</div>
+                    <div className="asset-info">
+                      <p className="asset-title">{category.title}</p>
+                      <p className="asset-description">{category.description}</p>
+                    </div>
+                    <div className="asset-value">
+                      {formatCurrency(data.total || 0)}
+                    </div>
                   </div>
-                  <div className="asset-value">
-                    {formatCurrency(data.total || 0)}
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })}
           </div>
         </div>
 

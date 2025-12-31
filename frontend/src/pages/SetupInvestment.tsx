@@ -14,11 +14,21 @@ interface InvestmentItem {
 interface SetupInvestmentProps {
   onComplete: (data: any) => void
   onBack: () => void
+  initialValue?: { items?: Array<{ category: string; amount: number }>; total?: number }
+  onDataChange?: (data: any) => void
 }
 
-const SetupInvestment = ({ onComplete, onBack }: SetupInvestmentProps) => {
+const SetupInvestment = ({ onComplete, onBack, initialValue, onDataChange }: SetupInvestmentProps) => {
+  const initialItems: InvestmentItem[] =
+    initialValue?.items && initialValue.items.length > 0
+      ? initialValue.items.map((it, idx) => ({
+          id: String(idx + 1),
+          category: it.category,
+          amount: Number(it.amount ?? 0),
+        }))
+      : [{ id: '1', category: '주식', amount: 0 }]
   const [items, setItems] = useState<InvestmentItem[]>([
-    { id: '1', category: '주식', amount: 0 } // ✅
+    ...initialItems,
   ])
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
@@ -35,13 +45,29 @@ const SetupInvestment = ({ onComplete, onBack }: SetupInvestmentProps) => {
     field: 'category' | 'amount',          // ✅
     value: string | number
   ) => {
-    setItems(items.map(item =>
+    const updatedItems = items.map(item =>
       item.id === id ? { ...item, [field]: value } : item
-    ))
+    )
+    setItems(updatedItems)
+    
+    // 실시간으로 데이터 변경 알림
+    const total = updatedItems.reduce((sum, item) => sum + item.amount, 0)
+    onDataChange?.({
+      items: updatedItems.filter(item => item.amount > 0),
+      total,
+    })
   }
 
   const handleDeleteItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id))
+    const updatedItems = items.filter(item => item.id !== id)
+    setItems(updatedItems)
+    
+    // 실시간으로 데이터 변경 알림
+    const total = updatedItems.reduce((sum, item) => sum + item.amount, 0)
+    onDataChange?.({
+      items: updatedItems.filter(item => item.amount > 0),
+      total,
+    })
   }
 
   const handleNext = () => {

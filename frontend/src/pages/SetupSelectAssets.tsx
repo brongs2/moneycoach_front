@@ -1,69 +1,112 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import StatusBar from '../components/StatusBar'
 import Title from '../components/Title'
 import LoadingBar from '../components/LoadingBar'
 import SelectionButton from '../components/SelectionButton'
 import ContentBlueButton from '../components/ContentBlueButton'
+import ConfirmModal from '../components/ConfirmModal'
+import { SavingsIcon, InvestmentIcon, TangibleAssetIcon, DebtIcon } from '../components/AssetIcons'
 import './SetupSelectAssets.css'
-
-// 아이콘 컴포넌트들 (SVG로 구현, currentColor 사용으로 선택 상태에 따라 색상 변경)
-const SavingsIcon = () => (
-  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ width: '44px', height: '44px' }}>
-    <rect x="21" y="36" width="44" height="31" rx="3" fill="currentColor" opacity="0.3"/>
-    <rect x="27" y="15" width="13" height="13" rx="2" fill="currentColor"/>
-    <rect x="45" y="30" width="13" height="13" rx="2" fill="currentColor"/>
-  </svg>
-)
-
-const InvestmentIcon = () => (
-  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ width: '44px', height: '44px' }}>
-    <rect x="10" y="30" width="8" height="14" rx="2" fill="currentColor"/>
-    <rect x="22" y="20" width="8" height="24" rx="2" fill="currentColor"/>
-    <rect x="34" y="10" width="8" height="34" rx="2" fill="currentColor"/>
-  </svg>
-)
-
-const TangibleAssetIcon = () => (
-  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ width: '44px', height: '44px' }}>
-    <rect x="8" y="12" width="28" height="28" rx="2" fill="currentColor" opacity="0.2"/>
-    <rect x="12" y="18" width="8" height="8" rx="1" fill="currentColor"/>
-    <rect x="24" y="18" width="8" height="8" rx="1" fill="currentColor"/>
-    <rect x="12" y="30" width="8" height="8" rx="1" fill="currentColor"/>
-    <rect x="24" y="30" width="8" height="8" rx="1" fill="currentColor"/>
-  </svg>
-)
-
-const DebtIcon = () => (
-  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ width: '44px', height: '44px' }}>
-    <rect x="12" y="8" width="20" height="28" rx="2" fill="currentColor" opacity="0.2"/>
-    <rect x="18" y="32" width="8" height="8" rx="1" fill="currentColor"/>
-    <rect x="30" y="20" width="8" height="8" rx="1" fill="currentColor"/>
-  </svg>
-)
 
 interface SetupSelectAssetsProps {
   onNext?: (selectedAssets: Set<string>) => void
   onBack?: () => void
+  initialSelectedAssets?: Set<string>
+  assetData?: Record<string, { items: any[]; total: number }>
+  onAssetDataDelete?: (category: string) => void
 }
 
-const SetupSelectAssets = ({ onNext, onBack }: SetupSelectAssetsProps) => {
-  const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
+const SetupSelectAssets = ({
+  onNext,
+  onBack,
+  initialSelectedAssets,
+  assetData = {},
+  onAssetDataDelete,
+}: SetupSelectAssetsProps) => {
+  const [selectedAssets, setSelectedAssets] = useState<Set<string>>(
+    initialSelectedAssets ?? new Set()
+  )
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingToggle, setPendingToggle] = useState<string | null>(null)
+
+  // initialSelectedAssets가 변경되면 내부 state 동기화
+  useEffect(() => {
+    if (initialSelectedAssets) {
+      setSelectedAssets(new Set(initialSelectedAssets))
+    }
+  }, [initialSelectedAssets])
 
   const assetCategories = [
-    { id: 'savings', title: '저축', description: '가지고 있는 현금, 예금 등의 현금성 자산', icon: <SavingsIcon /> },
-    { id: 'investment', title: '투자', description: '주식, 부동산, 암호화폐 등 투자성 자산', icon: <InvestmentIcon /> },
-    { id: 'tangible', title: '유형자산', description: '집, 오피스텔 등의 형태가 있는 자산', icon: <TangibleAssetIcon /> },
-    { id: 'debt', title: '부채', description: '학자금 대출, 신용 대출 등 부채', icon: <DebtIcon /> },
+    { 
+      id: 'savings', 
+      title: '저축', 
+      description: '가지고 있는 현금, 예금 등의 현금성 자산', 
+      icon: (selected: boolean) => <SavingsIcon selected={selected} />
+    },
+    { 
+      id: 'investment', 
+      title: '투자', 
+      description: '주식, 부동산, 암호화폐 등 투자성 자산', 
+      icon: (selected: boolean) => <InvestmentIcon selected={selected} />
+    },
+    { 
+      id: 'tangible', 
+      title: '유형자산', 
+      description: '집, 오피스텔 등의 형태가 있는 자산', 
+      icon: (selected: boolean) => <TangibleAssetIcon selected={selected} />
+    },
+    { 
+      id: 'debt', 
+      title: '부채', 
+      description: '학자금 대출, 신용 대출 등 부채', 
+      icon: (selected: boolean) => <DebtIcon selected={selected} />
+    },
   ]
 
   const toggleAsset = (id: string) => {
+    const isCurrentlySelected = selectedAssets.has(id)
+
+    // 선택 해제하는 경우에만 경고 확인
+    if (isCurrentlySelected) {
+      // 해당 카테고리에 입력된 데이터가 있는지 확인
+      const hasData = assetData[id] && assetData[id].total > 0
+
+      if (hasData) {
+        // 경고 모달 표시
+        setPendingToggle(id)
+        setShowConfirmModal(true)
+        return
+      }
+    }
+
+    // 데이터가 없거나 선택하는 경우 바로 토글
     const newSelected = new Set(selectedAssets)
-    if (newSelected.has(id)) {
+    if (isCurrentlySelected) {
       newSelected.delete(id)
     } else {
       newSelected.add(id)
     }
     setSelectedAssets(newSelected)
+  }
+
+  const handleConfirmDelete = () => {
+    if (pendingToggle) {
+      // 선택 해제
+      const newSelected = new Set(selectedAssets)
+      newSelected.delete(pendingToggle)
+      setSelectedAssets(newSelected)
+
+      // 데이터 삭제
+      onAssetDataDelete?.(pendingToggle)
+
+      setPendingToggle(null)
+      setShowConfirmModal(false)
+    }
+  }
+
+  const handleCancelDelete = () => {
+    setPendingToggle(null)
+    setShowConfirmModal(false)
   }
 
   const handleNext = () => {
@@ -98,16 +141,19 @@ const SetupSelectAssets = ({ onNext, onBack }: SetupSelectAssetsProps) => {
           </div>
 
           <div className="setup-category-selection">
-            {assetCategories.map((category) => (
-              <SelectionButton
-                key={category.id}
-                title={category.title}
-                description={category.description}
-                icon={category.icon}
-                selected={selectedAssets.has(category.id)}
-                onClick={() => toggleAsset(category.id)}
-              />
-            ))}
+            {assetCategories.map((category) => {
+              const isSelected = selectedAssets.has(category.id)
+              return (
+                <SelectionButton
+                  key={category.id}
+                  title={category.title}
+                  description={category.description}
+                  icon={category.icon(isSelected)}
+                  selected={isSelected}
+                  onClick={() => toggleAsset(category.id)}
+                />
+              )
+            })}
           </div>
 
           <div className="setup-bottom">
@@ -124,6 +170,15 @@ const SetupSelectAssets = ({ onNext, onBack }: SetupSelectAssetsProps) => {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        message="이전에 입력했던 정보들이 사라질 수 있습니다. 계속하시겠습니까?"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        confirmText="확인"
+        cancelText="취소"
+      />
     </div>
   )
 }

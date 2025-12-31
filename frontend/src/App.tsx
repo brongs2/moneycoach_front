@@ -86,6 +86,27 @@ function App() {
     setCurrentPage('myAssetPage')
   }
 
+  const handleAssetDataDelete = (category: string) => {
+    const updatedAssetData = { ...assetData }
+    delete updatedAssetData[category]
+    setAssetData(updatedAssetData)
+  }
+
+  // 인풋 변경 시 실시간으로 assetData 업데이트
+  const handleAssetDataChange = (assetType: string, data: any) => {
+    const items = data?.items ?? []
+    const total =
+      data?.total ??
+      items.reduce((sum: number, it: any) => {
+        if (assetType === 'debt') return sum + Number(it.amount ?? it.loan_amount ?? 0)
+        return sum + Number(it.amount ?? 0)
+      }, 0)
+    setAssetData((prev) => ({
+      ...prev,
+      [assetType]: { items, total },
+    }))
+  }
+
   const handleMyAssetPageInput = () => {
     const assetOrder = ['savings', 'investment', 'tangible', 'debt']
     const nextAssetToInput = assetOrder.find(
@@ -109,15 +130,85 @@ function App() {
     }
   }
 
-  const handleSetupComplete = async (assetType: string, data: any) => {
-    try {
-      await saveAssetByType(API, assetType, data)
-      await loadAll(API, setAssetData, setSelectedAssets)
-      setCurrentPage('myAssetPage')
-    } catch (e) {
-      console.error('저장 실패', e)
-      setCurrentPage('myAssetPage')
+  // setup 페이지에서 "뒤로가기"는 myAssetPage가 아니라 "이전 setup"으로 이동
+  const handleSetupBack = (currentAssetType: 'savings' | 'investment' | 'tangible' | 'debt') => {
+    const order: Array<'savings' | 'investment' | 'tangible' | 'debt'> = [
+      'savings',
+      'investment',
+      'tangible',
+      'debt',
+    ]
+    const idx = order.indexOf(currentAssetType)
+    const prevAsset = order
+      .slice(0, idx)
+      .reverse()
+      .find((a) => selectedAssets.has(a))
+
+    if (prevAsset === 'savings') {
+      setCurrentPage('setupSavings')
+      setLastSetupPage('setupSavings')
+      return
     }
+    if (prevAsset === 'investment') {
+      setCurrentPage('setupInvestment')
+      setLastSetupPage('setupInvestment')
+      return
+    }
+    if (prevAsset === 'tangible') {
+      setCurrentPage('setupRealAssets')
+      setLastSetupPage('setupRealAssets')
+      return
+    }
+    if (prevAsset === 'debt') {
+      setCurrentPage('setupDebt')
+      setLastSetupPage('setupDebt')
+      return
+    }
+
+    // 첫 setup이면 selectAssets로
+    setCurrentPage('selectAssets')
+  }
+
+  const handleSetupComplete = async (assetType: string, data: any) => {
+    // 0) 로컬 상태 우선 반영 (백엔드 실패 시에도 루프 방지)
+    const items = data?.items ?? []
+    const total =
+      data?.total ??
+      items.reduce((sum: number, it: any) => {
+        if (assetType === 'debt') return sum + Number(it.amount ?? it.loan_amount ?? 0)
+        return sum + Number(it.amount ?? 0)
+      }, 0)
+    const updatedAssetData = { ...assetData, [assetType]: { items, total } }
+    setAssetData(updatedAssetData)
+
+    // 1) 다음 입력 자산으로 이동 (myAssetPage는 "모두 끝난 뒤" 한 번만)
+    const assetOrder = ['savings', 'investment', 'tangible', 'debt']
+    const currentIndex = assetOrder.indexOf(assetType)
+    const nextAsset = assetOrder
+      .slice(currentIndex + 1)
+      .find((a) => selectedAssets.has(a) && (!updatedAssetData[a] || updatedAssetData[a].total === 0))
+
+    const goTo = (page: Page) => {
+      setCurrentPage(page)
+      if (page === 'setupSavings' || page === 'setupInvestment' || page === 'setupRealAssets' || page === 'setupDebt') {
+        setLastSetupPage(page)
+      }
+    }
+
+    if (nextAsset === 'investment') goTo('setupInvestment')
+    else if (nextAsset === 'tangible') goTo('setupRealAssets')
+    else if (nextAsset === 'debt') goTo('setupDebt')
+    else goTo('myAssetPage')
+
+    // 2) 백엔드 저장/리로드는 백그라운드로 (실패해도 화면 흐름은 유지)
+    ;(async () => {
+      try {
+        await saveAssetByType(API, assetType, data)
+        await loadAll(API, setAssetData, setSelectedAssets)
+      } catch (e) {
+        console.error('저장 실패(백그라운드)', e)
+      }
+    })()
   }
 
   const handleAssetClick = (assetType: string) => {
@@ -286,13 +377,21 @@ function App() {
   // ---------------------
   switch (currentPage) {
     case 'selectAssets':
-      return <SetupSelectAssets onNext={handleSelectAssetsNext} onBack={handleSelectAssetsBack} />
+      return (
+        <SetupSelectAssets
+          onNext={handleSelectAssetsNext}
+          onBack={handleSelectAssetsBack}
+          initialSelectedAssets={selectedAssets}
+          assetData={assetData}
+          onAssetDataDelete={handleAssetDataDelete}
+        />
+      )
 
     case 'myAssetPage': {
       const hasUnfilledAssets = Array.from(selectedAssets).some(
         (assetType) => !assetData[assetType] || assetData[assetType].total === 0
       )
-      return (
+  return (
         <MyAssetPage
           selectedAssets={selectedAssets}
           assetData={assetData}
@@ -306,16 +405,44 @@ function App() {
     }
 
     case 'setupSavings':
-      return <SetupSavings onComplete={(d) => handleSetupComplete('savings', d)} onBack={handleBackFromSetup} />
+      return (
+        <SetupSavings
+          initialValue={assetData.savings}
+          onComplete={(d) => handleSetupComplete('savings', d)}
+          onBack={() => handleSetupBack('savings')}
+          onDataChange={(d) => handleAssetDataChange('savings', d)}
+        />
+      )
 
     case 'setupInvestment':
-      return <SetupInvestment onComplete={(d) => handleSetupComplete('investment', d)} onBack={handleBackFromSetup} />
+      return (
+        <SetupInvestment
+          initialValue={assetData.investment}
+          onComplete={(d) => handleSetupComplete('investment', d)}
+          onBack={() => handleSetupBack('investment')}
+          onDataChange={(d) => handleAssetDataChange('investment', d)}
+        />
+      )
 
     case 'setupRealAssets':
-      return <SetupRealAssets onComplete={(d) => handleSetupComplete('tangible', d)} onBack={handleBackFromSetup} />
+      return (
+        <SetupRealAssets
+          initialValue={assetData.tangible}
+          onComplete={(d) => handleSetupComplete('tangible', d)}
+          onBack={() => handleSetupBack('tangible')}
+          onDataChange={(d) => handleAssetDataChange('tangible', d)}
+        />
+      )
 
     case 'setupDebt':
-      return <SetupDebt onComplete={(d) => handleSetupComplete('debt', d)} onBack={handleBackFromSetup} />
+      return (
+        <SetupDebt
+          initialValue={assetData.debt}
+          onComplete={(d) => handleSetupComplete('debt', d)}
+          onBack={() => handleSetupBack('debt')}
+          onDataChange={(d) => handleAssetDataChange('debt', d)}
+        />
+      )
 
     case 'assetDetail':
       return (
@@ -410,7 +537,7 @@ async function postJson(url: string, payload: any) {
 async function loadAll(
   API: string,
   setAssetData: (v: Record<string, any>) => void,
-  setSelectedAssets: (v: Set<string>) => void
+  setSelectedAssets: (v: Set<string> | ((prev: Set<string>) => Set<string>)) => void
 ) {
   const [savingsRows, investmentRows, assetRows, debtRows] = await Promise.all([
     fetchJson(`${API}/savings`),
@@ -419,20 +546,45 @@ async function loadAll(
     fetchJson(`${API}/debts`),
   ])
 
+  const savingsLabelMap: Record<string, string> = {
+    DEPOSIT: '일반 예금',
+    SAVING: '적금',
+    SUBSCRIPTION: '청약',
+    ETC: '기타',
+  }
+  const investmentLabelMap: Record<string, string> = {
+    STOCK: '주식',
+    REAL_ESTATE: '부동산',
+    CRYPTO: '암호화폐',
+    ETC: '기타',
+  }
+  const tangibleLabelMap: Record<string, string> = {
+    HOUSE: '집',
+    OFFICETEL: '오피스텔',
+    STORE: '상가',
+    ETC: '기타',
+  }
+  const debtLabelMap: Record<string, string> = {
+    STUDENT_LOAN: '학자금 대출',
+    CREDIT: '신용 대출',
+    MORTGAGE: '주택 대출',
+    ETC: '기타',
+  }
+
   const savingsItems = (savingsRows ?? []).map((r: any) => ({
-    category: r.category,
+    category: savingsLabelMap[r.category] ?? r.category,
     amount: Number(r.amount ?? 0),
   }))
   const savingsTotal = savingsItems.reduce((s: number, x: any) => s + x.amount, 0)
 
   const investmentItems = (investmentRows ?? []).map((r: any) => ({
-    category: r.category,
+    category: investmentLabelMap[r.category] ?? r.category,
     amount: Number(r.amount ?? 0),
   }))
   const investmentTotal = investmentItems.reduce((s: number, x: any) => s + x.amount, 0)
 
   const tangibleItems = (assetRows ?? []).map((r: any) => ({
-    category: r.category,
+    category: tangibleLabelMap[r.category] ?? r.category,
     amount: Number(r.amount ?? 0),
     loan_amount: Number(r.loan_amount ?? 0),
     interest_rate: Number(r.interest_rate ?? 0),
@@ -441,13 +593,13 @@ async function loadAll(
   const tangibleTotal = tangibleItems.reduce((s: number, x: any) => s + x.amount, 0)
 
   const debtItems = (debtRows ?? []).map((r: any) => ({
-    category: r.category,
-    loan_amount: Number(r.loan_amount ?? 0),
+    category: debtLabelMap[r.category] ?? r.category,
+    loan_amount: Number(r.loan_amount ?? r.amount ?? 0),
     repay_amount: Number(r.repay_amount ?? 0),
     interest_rate: Number(r.interest_rate ?? 0),
     compound: r.compound ?? 'COMPOUND',
   }))
-  const debtTotal = debtItems.reduce((s: number, x: any) => s + x.loan_amount, 0)
+  const debtTotal = debtItems.reduce((s: number, x: any) => s + (x.loan_amount || 0), 0)
 
   setAssetData({
     savings: { items: savingsItems, total: savingsTotal },
@@ -461,7 +613,12 @@ async function loadAll(
   if (investmentItems.length) selected.add('investment')
   if (tangibleItems.length) selected.add('tangible')
   if (debtItems.length) selected.add('debt')
-  setSelectedAssets(selected)
+  setSelectedAssets((prev) => {
+    if (!prev || prev.size === 0) return selected
+    const merged = new Set(prev)
+    selected.forEach((v) => merged.add(v))
+    return merged
+  })
 }
 
 async function saveAssetByType(API: string, assetType: string, data: any) {
@@ -493,9 +650,9 @@ async function saveAssetByType(API: string, assetType: string, data: any) {
       items: (data?.items ?? []).map((it: any) => ({
         category: map[it.category] ?? it.category,
         amount: Number(it.amount ?? 0),
-        loan_amount: Number(it.loan_amount ?? 0),
-        interest_rate: Number(it.interest_rate ?? 0),
-        repay_amount: Number(it.repay_amount ?? 0),
+        loan_amount: Number(it.loanAmount ?? it.loan_amount ?? 0),
+        interest_rate: Number(it.interestRate ?? it.interest_rate ?? 0),
+        repay_amount: Number(it.monthlyPayment ?? it.repay_amount ?? 0),
       })),
     }
     await postJson(`${API}/assets/bulk`, payload)
@@ -513,12 +670,12 @@ async function saveAssetByType(API: string, assetType: string, data: any) {
       items: (data?.items ?? [])
         .map((it: any) => ({
           category: map[it.category] ?? it.category,
-          loan_amount: Number(it.loan_amount ?? 0),
-          repay_amount: Number(it.repay_amount ?? 0),
-          interest_rate: Number(it.interest_rate ?? 0),
+          loan_amount: Number(it.amount ?? it.loan_amount ?? 0),
+          repay_amount: Number(it.monthlyPayment ?? it.repay_amount ?? 0),
+          interest_rate: Number(it.interestRate ?? it.interest_rate ?? 0),
           compound: it.compound ?? 'COMPOUND',
         }))
-        .filter((x: any) => x.loan_amount > 0),
+        .filter((x: any) => Number(x.loan_amount) > 0),
     }
     await postJson(`${API}/debts/bulk`, payload)
     return
