@@ -57,7 +57,7 @@ interface PersonalInfo {
 // App
 // =====================
 function App() {
-  const API = 'http://localhost:8000/api'
+  const API = 'http://192.168.0.20:8000/api'
 
   const [currentPage, setCurrentPage] = useState<Page>('personalInfo')
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null)
