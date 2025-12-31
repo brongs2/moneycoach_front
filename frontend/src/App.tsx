@@ -59,7 +59,9 @@ interface PersonalInfo {
 // App
 // =====================
 function App() {
-  const API = 'http://192.168.0.20:8000/api'
+  // 개발 환경에서는 vite proxy를 통해 /api로 프록시됨 (vite.config.ts 참고)
+  // 같은 컴퓨터에서 프론트엔드와 백엔드를 모두 실행하면 자동으로 localhost:8000으로 연결됨
+  const API = '/api'
 
   const [currentPage, setCurrentPage] = useState<Page>('personalInfo')
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null)
@@ -559,10 +561,10 @@ async function loadAll(
   setSelectedAssets: (v: Set<string> | ((prev: Set<string>) => Set<string>)) => void
 ) {
   const [savingsRows, investmentRows, assetRows, debtRows] = await Promise.all([
-    fetchJson(`${API}/savings`),
-    fetchJson(`${API}/investments`),
-    fetchJson(`${API}/assets`),
-    fetchJson(`${API}/debts`),
+    fetchJson(`${API}/savings/`),
+    fetchJson(`${API}/investments/`),
+    fetchJson(`${API}/assets/`),
+    fetchJson(`${API}/debts/`),
   ])
 
   const savingsLabelMap: Record<string, string> = {
@@ -776,7 +778,7 @@ function buildTaxBodies(planId: number, planState: any) {
 }
 
 async function submitPlanAll(API: string, planState: any) {
-  const created = await postJson(`${API}/plans`, buildPlanBody(planState))
+  const created = await postJson(`${API}/plans/`, buildPlanBody(planState))
   const planId = created.plan_id ?? created.id
   if (!planId) throw new Error('plan_id not found in /plans response')
 

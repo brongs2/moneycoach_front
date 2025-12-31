@@ -18,7 +18,7 @@ from backend.routes import savings, investments, assets, debts, plans, users
 # ==============================
 # FastAPI 앱 (⚠️ 하나만!)
 # ==============================
-app = FastAPI(title="MoneyCoach + Figma MCP API")
+app = FastAPI(title="MoneyCoach + Figma MCP API", redirect_slashes=False)
 
 # ==============================
 # CORS
