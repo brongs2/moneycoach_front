@@ -8,6 +8,11 @@ import SetupRealAssets from './pages/SetupRealAssets'
 import SetupDebt from './pages/SetupDebt'
 import AssetDetailPage from './pages/AssetDetailPage'
 import MainPage from './pages/MainPage'
+import PlanSetGoal from './pages/PlanSetGoal'
+import PlanIncome from './pages/PlanIncome'
+import PlanOutcome from './pages/PlanOutcome'
+import PlanTaxRate from './pages/PlanTaxRate'
+import PlanLifestyle from './pages/PlanLifestyle'
 import './App.css'
 
 type Page = 
@@ -20,6 +25,11 @@ type Page =
   | 'setupDebt'
   | 'assetDetail'
   | 'mainPage'
+  | 'planSetGoal'
+  | 'planIncome'
+  | 'planOutcome'
+  | 'planTaxRate'
+  | 'planLifestyle'
 
 interface PersonalInfo {
   purpose: string
@@ -440,7 +450,45 @@ async function postCategory(url: string, payload: any) {
         />
       )
     case 'mainPage':
-      return <MainPage assetData={assetData} />
+      return <MainPage assetData={assetData} onPlanClick={() => setCurrentPage('planSetGoal')} />
+    case 'planSetGoal':
+      return (
+        <PlanSetGoal
+          onNext={() => setCurrentPage('planIncome')}
+          onBack={() => setCurrentPage('mainPage')}
+        />
+      )
+    case 'planIncome':
+      return (
+        <PlanIncome
+          onNext={() => setCurrentPage('planOutcome')}
+          onBack={() => setCurrentPage('planSetGoal')}
+        />
+      )
+    case 'planOutcome':
+      return (
+        <PlanOutcome
+          onNext={() => setCurrentPage('planTaxRate')}
+          onBack={() => setCurrentPage('planIncome')}
+        />
+      )
+    case 'planTaxRate':
+      return (
+        <PlanTaxRate
+          onNext={() => setCurrentPage('planLifestyle')}
+          onBack={() => setCurrentPage('planOutcome')}
+        />
+      )
+    case 'planLifestyle':
+      return (
+        <PlanLifestyle
+          onNext={() => {
+            // TODO: 완료 후 메인 페이지로 이동하거나 다음 단계로
+            setCurrentPage('mainPage')
+          }}
+          onBack={() => setCurrentPage('planTaxRate')}
+        />
+      )
     default:
       return <SetupPersonalInfo onNext={handlePersonalInfoNext} />
   }
