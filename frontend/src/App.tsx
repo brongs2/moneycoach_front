@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import SetupPersonalInfo from './pages/SetupPersonalInfo'
 import SetupSelectAssets from './pages/SetupSelectAssets'
 import MyAssetPage from './pages/MyAssetPage'
@@ -45,7 +45,7 @@ function App() {
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<string | null>(null)
   const [lastSetupPage, setLastSetupPage] = useState<Page | null>(null)
   useEffect(() => {
-    loadAll().catch(console.error)
+    loadAll({ preserveSelection: false }).catch(console.error)
   }, [])
   const handlePersonalInfoNext = (info: PersonalInfo) => {
     setPersonalInfo(info)
@@ -87,6 +87,20 @@ function App() {
 
   const handleSetupComplete = async (assetType: string, data: any) => {
     try {
+      // 0) 로컬 상태를 먼저 반영 (백엔드 실패 시에도 반복 입력 루프 방지)
+      setAssetData(prev => {
+        const current = prev[assetType] || { items: [], total: 0 }
+        const items = data?.items ?? current.items ?? []
+        const total =
+          data?.total ??
+          items.reduce((sum: number, it: any) => sum + Number(it.amount ?? it.loan_amount ?? 0), 0)
+        return {
+          ...prev,
+          [assetType]: { items, total }
+        }
+      })
+      setSelectedAssets(prev => new Set([...prev, assetType]))
+
       // 1) assetType별로 즉시 DB 저장
       if (assetType === 'savings') {
         const savingsCategoryMap: Record<string, string> = {
@@ -164,8 +178,8 @@ function App() {
         await postCategory(`${API}/debts/bulk`, payload)
       }
 
-      // 2) 저장 후, DB에서 다시 로드해서 화면 데이터 갱신
-      await loadAll()
+      // 2) 저장 후, DB에서 다시 로드해서 화면 데이터 갱신 (선택 목록은 유지)
+      await loadAll({ preserveSelection: true })
 
       // 3) 입력 흐름 계속(다음 페이지로 이동)
       setCurrentPage('myAssetPage')
@@ -193,7 +207,7 @@ const fetchJson = async (url: string) => {
   return res.json()
 }
 
-const loadAll = async () => {
+const loadAll = async ({ preserveSelection }: { preserveSelection?: boolean } = {}) => {
   const [savingsRows, investmentRows, assetRows, debtRows] = await Promise.all([
     fetchJson(`${API}/savings`),
     fetchJson(`${API}/investments`),
@@ -238,13 +252,17 @@ const loadAll = async () => {
     debt: { items: debtItems, total: debtItems.reduce((s: number, x: any) => s + (x.loan_amount || 0), 0) },
   })
 
-  // (선택) 메인페이지/차트 표시용으로 자동 선택 세팅
+  // (선택) 자동 선택 세팅: 사용자가 이미 선택한 값이 없을 때만 반영
   const selected = new Set<string>()
   if (savingsItems.length) selected.add('savings')
   if (investmentItems.length) selected.add('investment')
   if (tangibleItems.length) selected.add('tangible')
   if (debtItems.length) selected.add('debt')
-  setSelectedAssets(selected)
+  if (!preserveSelection) {
+    setSelectedAssets(selected)
+  } else {
+    setSelectedAssets(prev => (prev.size === 0 ? selected : prev))
+  }
 }
 
 async function postCategory(url: string, payload: any) {
