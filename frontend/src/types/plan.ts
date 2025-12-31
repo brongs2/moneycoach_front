@@ -49,9 +49,17 @@ export interface PlanLifestyleData {
   // lifestyle 관련 필드 있으면 여기에 추가
 }
 
+// ===== Simulation Info =====
+export interface PlanSimulationInfoData {
+  investmentReturn: number  // 투자 수익률 (%)
+  interestRate: number      // 금리 (%)
+  inflation: number         // 인플레이션 (%)
+}
+
 // ===== Aggregated State (App에서 모으는 용도) =====
 export interface PlanState {
   goal?: PlanGoalData
+  simulationInfo?: PlanSimulationInfoData
   income?: PlanIncomeData
   outcome?: PlanOutcomeData
   taxRate?: PlanTaxRateData

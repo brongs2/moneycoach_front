@@ -1,4 +1,4 @@
-.setup-savings {
+.plan-set-simulation-info {
   background-color: var(--bgwhite, #fcfcfc);
   width: 100%;
   height: 100vh;
@@ -39,17 +39,6 @@
   flex-shrink: 0;
 }
 
-.setup-content {
-  width: 100%;
-  height: 767px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0 64px 0;
-  flex-shrink: 0;
-}
-
 .setup-content-scrollable {
   width: 100%;
   flex: 1;
@@ -61,13 +50,12 @@
   -webkit-overflow-scrolling: touch;
   padding: 16px 0;
   flex-shrink: 0;
-  /* 스크롤바 숨기기 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .setup-content-scrollable::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 .setup-top {
@@ -95,6 +83,7 @@
   color: var(--black, #333);
   width: 100%;
   margin: 0;
+  line-height: normal;
 }
 
 .setup-title .title-subtitle {
@@ -104,6 +93,7 @@
   color: var(--subtitlegray, #bcbcbc);
   width: 100%;
   margin: 0;
+  line-height: normal;
 }
 
 .setup-form {
@@ -117,80 +107,85 @@
 }
 
 .setup-form-spaced {
-  margin-top: 60px; /* title에서부터 60px 떨어지도록 */
+  margin-top: 60px;
 }
 
-.savings-input-row {
+.simulation-info-item {
   width: 100%;
   display: flex;
-  gap: 50px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.simulation-info-row {
+  width: 100%;
+  display: flex;
+  gap: 22px;
   align-items: center;
 }
 
-.savings-type-select {
+.simulation-info-label {
   flex: 1;
-  height: 32px;
-  border: none;
-  border-bottom: 1px solid var(--subtitlegray, #bcbcbc);
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 600;
   font-size: 24px;
   color: var(--subtitlegray, #bcbcbc);
-  background: transparent;
-  outline: none;
-  /* 모바일에서 기본 스타일 제거 */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9L12 15L18 9' stroke='%23bcbcbc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0 center;
-  background-size: 20px 20px;
-  padding-right: 24px;
+  text-align: center;
 }
 
-.savings-item {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.savings-input-row {
-  width: 100%;
-  display: flex;
-  gap: 50px;
-  align-items: center;
-}
-
-.savings-delete-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
+.simulation-info-value-group {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 32px;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 1;
+  padding: 0 35px;
+  min-height: 32px;
   height: 32px;
 }
 
-.savings-delete-button:hover svg path {
-  stroke: var(--black, #333);
+.simulation-info-input {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--subtitlegray, #bcbcbc);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  flex: 0 1 auto;
+  width: 60px;
+  max-width: 100px;
+  height: 32px;
+  line-height: 32px;
+  text-align: right;
 }
 
-.add-more-button {
-  width: 100%;
-  height: 36px;
-  background-color: var(--moneyblue, #4068ff);
-  border: none;
-  border-radius: 10px;
-  color: var(--bgwhite, #fcfcfc);
+.simulation-info-input.filled {
+  color: var(--moneyblue, #4068ff);
+}
+
+.simulation-info-input::placeholder {
+  color: var(--subtitlegray, #bcbcbc);
+}
+
+.simulation-info-unit {
   font-family: 'Pretendard Variable', sans-serif;
   font-weight: 500;
-  font-size: 16px;
-  cursor: pointer;
+  font-size: 20px;
+  color: var(--subtitlegray, #bcbcbc);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.simulation-info-description {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--subtitlegray, #bcbcbc);
+  text-align: center;
+  margin: 0;
+  width: 100%;
 }
 
 .setup-bottom {
@@ -207,32 +202,6 @@
   bottom: 64px;
   left: 0;
   right: 0;
-  margin-top: 60px; /* setup-form과 60px 간격 유지 */
-}
-
-.setup-bottom-spaced.scrollable {
-  position: relative;
-  bottom: auto;
-  margin-top: 60px; /* setup-form과 60px 간격 유지 */
-}
-
-.setup-bottom.fixed {
-  position: absolute;
-  bottom: 64px;
-  left: 0;
-  right: 0;
-  background-color: var(--bgwhite, #fcfcfc);
-}
-
-.setup-bottom.fixed.setup-bottom-spaced {
-  margin-top: 60px;
-  position: sticky;
-  bottom: 0;
-}
-
-.setup-bottom-spaced.scrollable.fixed {
-  position: sticky;
-  bottom: 0;
   margin-top: 60px;
 }
 
