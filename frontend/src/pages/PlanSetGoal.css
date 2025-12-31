@@ -1,0 +1,221 @@
+.plan-set-goal {
+  background-color: var(--bgwhite, #fcfcfc);
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-container {
+  width: 100%;
+  max-width: 393px;
+  height: 100vh;
+  max-height: 852px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  justify-content: space-between;
+}
+
+.plan-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.plan-back-button {
+  width: 100%;
+  height: 24px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.plan-content {
+  flex: 0 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 54px;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+  justify-content: flex-start;
+}
+
+.plan-title {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--black, #333);
+  margin: 0;
+  padding: 0 23px;
+  flex-shrink: 0;
+}
+
+.plan-form-wrapper {
+  flex-shrink: 0;
+}
+
+.plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  align-items: center;
+  padding: 0 50px;
+  flex-shrink: 0;
+}
+
+.plan-form-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  gap: 8px;
+  min-height: 32px;
+  justify-content: center;
+}
+
+.plan-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.plan-input-age {
+  width: 72px;
+}
+
+.plan-input-asset {
+  width: 137px;
+}
+
+.plan-input-multiplier {
+  width: 112px;
+}
+
+.plan-input-action {
+  width: 286px;
+}
+
+.plan-input-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--subtitlegray, #bcbcbc);
+}
+
+.plan-input {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--subtitlegray, #bcbcbc);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  width: 100%;
+  cursor: pointer;
+  height: 29px;
+  line-height: 29px;
+  padding-right: 28px;
+}
+
+.plan-input.filled {
+  color: var(--moneyblue, #4068ff);
+}
+
+.plan-input::placeholder {
+  color: var(--subtitlegray, #bcbcbc);
+}
+
+.plan-label {
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--black, #333);
+  white-space: nowrap;
+  padding-top: 8px;
+  line-height: 24px;
+}
+
+.plan-chevron {
+  color: var(--subtitlegray, #bcbcbc);
+  flex-shrink: 0;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.plan-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--bgwhite, #fcfcfc);
+  border: 1px solid var(--subtitlegray, #bcbcbc);
+  border-radius: 8px;
+  margin-top: 4px;
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.plan-dropdown-item {
+  padding: 12px 16px;
+  font-family: 'Pretendard Variable', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--black, #333);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.plan-dropdown-item:hover {
+  background-color: var(--lightgray, #f1f1f1);
+}
+
+.plan-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  flex-shrink: 0;
+  min-height: 49px;
+}
+
+.plan-navigation {
+  width: 100%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  height: 86px;
+  min-height: 86px;
+}
+
+.plan-navigation .navigation-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
