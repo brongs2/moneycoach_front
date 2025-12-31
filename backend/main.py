@@ -12,7 +12,7 @@ import asyncpg
 from backend.db import get_db_connection
 from backend.auth import get_current_user, CurrentUser
 from backend.snapshot import load_user_snapshot
-from backend.routes import savings, investments, assets, debts, plans
+from backend.routes import savings, investments, assets, debts, plans, users
 # from backend.mcp_client import mcp_client  # MCP 구현 시 사용
 
 # ==============================
@@ -49,6 +49,7 @@ app.include_router(assets.router, prefix="/api", tags=["assets"])
 app.include_router(debts.router, prefix="/api", tags=["debts"])
 app.include_router(plans.router, prefix="/api", tags=["plans"])
 
+app.include_router(users.router, prefix="/api")
 # ==============================
 # Figma MCP 관련 스키마
 # ==============================

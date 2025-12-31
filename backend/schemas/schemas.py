@@ -19,15 +19,16 @@ PriorityBucketType = Literal["SAVINGS", "INVEST", "SPEND", "OTHER"]
 
 # ===== Users =====
 class UserCreate(BaseModel):
-    username: str = Field(..., min_length=1)
     birth: Optional[date] = None
     gender: Optional[Gender] = None
+    purpose: str
 
 class UserOut(BaseModel):
     id: int
     username: str
     birth: Optional[date] = None
     gender: Optional[Gender] = None
+    purpose: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

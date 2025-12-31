@@ -106,7 +106,7 @@ function App() {
 
   const handleAssetClick = (assetType: string) => {
     setSelectedAssetForDetail(assetType)
-    setCurrentPage('assetDetail')
+    setCurrentPage('assetDetail') 
   }
 async function postCategory(url: string, payload: any) {
   console.log(`➡️ POST ${url}`)
@@ -148,7 +148,24 @@ async function postCategory(url: string, payload: any) {
   console.log('================================')
 
   try {
-    // ✅ SAVINGS
+     if (personalInfo) {
+      const genderMap: Record<string, string> = {
+        '남성': 'MALE',
+        '여성': 'FEMALE',
+      }
+      const birth = personalInfo.birthDate
+      ? personalInfo.birthDate.replace(/\//g, '-')  // ✅ 모든 '/' → '-'
+      : null
+      const userPayload = {
+        birth,
+        gender: genderMap[personalInfo.gender] ?? personalInfo.gender ?? null,
+
+        purpose: personalInfo.purpose || '',
+      }
+      console.log(userPayload)
+      await postCategory('http://localhost:8000/api/users/me', userPayload)
+    }
+      // ✅ SAVINGS
     if (selectedAssets.has('savings')) {
       const savingsCategoryMap: Record<string, string> = {
         '일반 예금': 'DEPOSIT',
