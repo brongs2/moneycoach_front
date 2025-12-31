@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { PlanState } from '../types/plan' 
 import StatusBar from '../components/StatusBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import NavigationBar from '../components/NavigationBar'
@@ -6,11 +7,12 @@ import './MainPage.css'
 
 interface MainPageProps {
   assetData: Record<string, any>
+  planState?: PlanState
   onPlanClick?: () => void
 }
 
 
-const MainPage = ({ assetData, onPlanClick }: MainPageProps) => {
+const MainPage = ({ assetData,planState, onPlanClick }: MainPageProps) => {
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
 
   // 총 자산 계산

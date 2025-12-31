@@ -1,22 +1,27 @@
 // PlanSetGoal.tsx  (smooth 버전: 중복/따닥 방지 포함)
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import type { PlanGoalData } from '../types/plan'
+
 import StatusBar from '../components/StatusBar'
 import NavigationBar from '../components/NavigationBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import './PlanSetGoal.css'
 
 interface PlanSetGoalProps {
-  onNext?: () => void
+  initialValue?: PlanGoalData
+  onNext?: (data: PlanGoalData) => void   // ✅ 핵심
   onBack?: () => void
 }
 
 const AUTO_SCROLL_LOCK_MS = 220 // smooth 스크롤이 끝날 정도로만 "짧게" 잠금
 
-const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
-  const [age, setAge] = useState('')
-  const [assetType, setAssetType] = useState('')
-  const [multiplier, setMultiplier] = useState('')
-  const [action, setAction] = useState('')
+const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
+  const [age, setAge] = useState(initialValue?.age ? String(initialValue.age) : '')
+  const [assetType, setAssetType] = useState(initialValue?.assetType ?? '')
+  const [multiplier, setMultiplier] = useState(
+    initialValue?.multiplier ? `${initialValue.multiplier}배` : ''
+  )
+  const [action, setAction] = useState(initialValue?.action ?? '')
 
   const [showAssetDropdown, setShowAssetDropdown] = useState(false)
   const [showMultiplierDropdown, setShowMultiplierDropdown] = useState(false)
@@ -112,6 +117,28 @@ const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
       }
     })
   }, [showActionDropdown])
+  const parseMultiplier = (text: string) => {
+    // '3배' -> 3
+    const n = Number(String(text).replace(/[^\d.]/g, ''))
+    return Number.isFinite(n) ? n : 0
+  }
+
+  const handleNext = () => {
+    if (!isAllFilled) return
+
+    const ageNum = Number(age)
+    const mulNum = parseMultiplier(multiplier)
+
+    if (!Number.isFinite(ageNum) || ageNum <= 0) return
+    if (!Number.isFinite(mulNum) || mulNum <= 0) return
+
+    onNext?.({
+      age: ageNum,
+      assetType,
+      multiplier: mulNum,
+      action,
+    })
+  }
 
   // 언마운트 시 타이머 정리
   useEffect(() => {
@@ -336,13 +363,14 @@ const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
           <div className="plan-bottom">
             <ContentBlueButton
               label="다음"
-              onClick={onNext}
+              onClick={handleNext}
               style={{
                 visibility: isAllFilled ? 'visible' : 'hidden',
                 opacity: isAllFilled ? 1 : 0,
                 pointerEvents: isAllFilled ? 'auto' : 'none',
               }}
             />
+
           </div>
         </div>
 

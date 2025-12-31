@@ -14,6 +14,7 @@ import PlanOutcome from './pages/PlanOutcome'
 import PlanTaxRate from './pages/PlanTaxRate'
 import PlanLifestyle from './pages/PlanLifestyle'
 import './App.css'
+import type { PlanState, PlanGoalData, PlanIncomeData, PlanOutcomeData, PlanTaxRateData, PlanLifestyleData } from './types/plan'
 
 type Page = 
   | 'personalInfo' 
@@ -44,6 +45,8 @@ function App() {
   const [assetData, setAssetData] = useState<Record<string, any>>({})
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<string | null>(null)
   const [lastSetupPage, setLastSetupPage] = useState<Page | null>(null)
+  const [planState, setPlanState] = useState<PlanState>({})
+
   useEffect(() => {
     loadAll().catch(console.error)
   }, [])
@@ -404,6 +407,45 @@ async function postCategory(url: string, payload: any) {
   }
 }
 
+  // ✅ Goal 저장 후 다음으로
+  const handlePlanGoalNext = (goal: PlanGoalData) => {
+    setPlanState(prev => ({ ...prev, goal }))
+    setCurrentPage('planIncome')
+  }
+
+  // ✅ Income(=revenue) 저장 후 다음으로
+  const handlePlanIncomeNext = (income: PlanIncomeData) => {
+    setPlanState(prev => ({ ...prev, income }))
+    setCurrentPage('planOutcome')
+  }
+
+  // ✅ Expense 저장 후 다음으로
+  const handlePlanOutcomeNext = (outcome: PlanOutcomeData) => {
+  setPlanState(prev => ({ ...prev, outcome }))
+  setCurrentPage('planTaxRate')
+}
+
+  // (선택) TaxRate도 state에 넣고 싶으면 PlanState에 tax 추가하고 여기서 저장
+  const handlePlanTaxNext = (taxRate: PlanTaxRateData) => {
+  setPlanState(prev => ({ ...prev, taxRate }))
+  setCurrentPage('planLifestyle')
+}
+
+
+
+  // ✅ Lifestyle + priority 저장 후 완료
+  const handlePlanLifestyleFinish = (lifestyle: PlanLifestyleData) => {
+    const finalPlan = { ...planState, lifestyle }
+    setPlanState(finalPlan)
+
+    // ✅ 여기서 최종 plan payload가 다 모임
+    console.log('FINAL PLAN ====', finalPlan)
+
+    // (선택) 백엔드 저장
+    // await postCategory(`${API}/plans`, finalPlan)
+
+    setCurrentPage('mainPage')
+  }
 
   // 백엔드로 보낼 데이터 구조화 함수
   const prepareSubmissionData = () => {
@@ -572,53 +614,67 @@ async function postCategory(url: string, payload: any) {
         />
       )
     case 'assetDetail':
-  return (
-        <AssetDetailPage
-          assetType={selectedAssetForDetail || ''}
-          assetData={assetData[selectedAssetForDetail || '']}
-          onBack={handleBackFromDetail}
+      return (
+            <AssetDetailPage
+              assetType={selectedAssetForDetail || ''}
+              assetData={assetData[selectedAssetForDetail || '']}
+              onBack={handleBackFromDetail}
+            />
+          )
+        case 'mainPage':
+      return (
+        <MainPage
+          assetData={assetData}
+          planState={planState} // ✅ 추가(메인에서 플랜 결과 보여줄거면)
+          onPlanClick={() => setCurrentPage('planSetGoal')}
         />
       )
-    case 'mainPage':
-      return <MainPage assetData={assetData} onPlanClick={() => setCurrentPage('planSetGoal')} />
+
     case 'planSetGoal':
       return (
         <PlanSetGoal
-          onNext={() => setCurrentPage('planIncome')}
+          initialValue={planState.goal}
+          onNext={handlePlanGoalNext}
           onBack={() => setCurrentPage('mainPage')}
         />
       )
+
     case 'planIncome':
       return (
         <PlanIncome
-          onNext={() => setCurrentPage('planOutcome')}
+          initialValue={planState.income}
+          onNext={handlePlanIncomeNext}
           onBack={() => setCurrentPage('planSetGoal')}
         />
       )
+
     case 'planOutcome':
       return (
         <PlanOutcome
-          onNext={() => setCurrentPage('planTaxRate')}
+          initialValue={planState.outcome}
+          onNext={handlePlanOutcomeNext}
           onBack={() => setCurrentPage('planIncome')}
         />
       )
+
     case 'planTaxRate':
       return (
         <PlanTaxRate
-          onNext={() => setCurrentPage('planLifestyle')}
+          initialValue={planState.taxRate}
+          onNext={handlePlanTaxNext}
           onBack={() => setCurrentPage('planOutcome')}
         />
       )
+
     case 'planLifestyle':
       return (
         <PlanLifestyle
-          onNext={() => {
-            // TODO: 완료 후 메인 페이지로 이동하거나 다음 단계로
-            setCurrentPage('mainPage')
-          }}
+          initialValue={planState.lifestyle}
+          onNext={handlePlanLifestyleFinish}
           onBack={() => setCurrentPage('planTaxRate')}
         />
       )
+
     default:
       return <SetupPersonalInfo onNext={handlePersonalInfoNext} />
   }

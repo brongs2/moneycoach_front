@@ -4,19 +4,26 @@ import LoadingBar from '../components/LoadingBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import './PlanTaxRate.css'
 
+import type { PlanTaxRateData } from '../types/plan'
+
 interface PlanTaxRateProps {
-  onNext?: () => void
+  initialValue?: PlanTaxRateData
+  onNext?: (data: PlanTaxRateData) => void
   onBack?: () => void
 }
 
-const PlanTaxRate = ({ onNext, onBack }: PlanTaxRateProps) => {
-  const [taxRate, setTaxRate] = useState('')
+const PlanTaxRate = ({ initialValue, onNext, onBack }: PlanTaxRateProps) => {
+  // ✅ initialValue 있으면 반영
+  const [taxRate, setTaxRate] = useState(
+    initialValue?.taxRate != null ? String(initialValue.taxRate) : ''
+  )
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
 
   const handleNext = () => {
-    if (taxRate !== '' && parseFloat(taxRate) > 0) {
-      onNext?.()
+    const num = Number(taxRate)
+    if (Number.isFinite(num) && num > 0) {
+      onNext?.({ taxRate: num }) // ✅ data로 전달
     }
   }
 
@@ -24,14 +31,14 @@ const PlanTaxRate = ({ onNext, onBack }: PlanTaxRateProps) => {
     const checkSpacing = () => {
       if (formRef.current) {
         const container = formRef.current.closest('.setup-container')
-        
+
         if (container) {
           const formRect = formRef.current.getBoundingClientRect()
           const containerRect = container.getBoundingClientRect()
-          
+
           const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49
           const spacing = buttonTopWhenAbsolute - formRect.bottom
-          
+
           setShouldScroll(spacing < 60)
         }
       }
@@ -47,7 +54,8 @@ const PlanTaxRate = ({ onNext, onBack }: PlanTaxRateProps) => {
     }
   }, [])
 
-  const isTaxRateFilled = taxRate !== '' && parseFloat(taxRate) > 0
+  const num = Number(taxRate)
+  const isTaxRateFilled = Number.isFinite(num) && num > 0
 
   return (
     <div className="plan-tax-rate">
@@ -88,8 +96,8 @@ const PlanTaxRate = ({ onNext, onBack }: PlanTaxRateProps) => {
           </div>
 
           <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''}`}>
-            <ContentBlueButton 
-              label="다음" 
+            <ContentBlueButton
+              label="다음"
               onClick={handleNext}
               disabled={!isTaxRateFilled}
             />

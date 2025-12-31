@@ -4,13 +4,18 @@ import LoadingBar from '../components/LoadingBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import './PlanLifestyle.css'
 
+import type { PlanLifestyleData } from '../types/plan'
+
 interface PlanLifestyleProps {
-  onNext?: () => void
+  initialValue?: PlanLifestyleData
+  onNext?: (data: PlanLifestyleData) => void
   onBack?: () => void
 }
 
-const PlanLifestyle = ({ onNext, onBack }: PlanLifestyleProps) => {
-  const [selectedLifestyles, setSelectedLifestyles] = useState<Set<string>>(new Set())
+const PlanLifestyle = ({ initialValue, onNext, onBack }: PlanLifestyleProps) => {
+  const [selectedLifestyles, setSelectedLifestyles] = useState<Set<string>>(
+    new Set(initialValue?.preferences ?? [])
+  )
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -23,17 +28,14 @@ const PlanLifestyle = ({ onNext, onBack }: PlanLifestyleProps) => {
 
   const handleLifestyleToggle = (lifestyle: string) => {
     const newSelected = new Set(selectedLifestyles)
-    if (newSelected.has(lifestyle)) {
-      newSelected.delete(lifestyle)
-    } else {
-      newSelected.add(lifestyle)
-    }
+    if (newSelected.has(lifestyle)) newSelected.delete(lifestyle)
+    else newSelected.add(lifestyle)
     setSelectedLifestyles(newSelected)
   }
 
   const handleNext = () => {
     if (selectedLifestyles.size > 0) {
-      onNext?.()
+      onNext?.({ preferences: Array.from(selectedLifestyles) }) // ✅ preference만 전송
     }
   }
 
@@ -41,14 +43,11 @@ const PlanLifestyle = ({ onNext, onBack }: PlanLifestyleProps) => {
     const checkSpacing = () => {
       if (formRef.current) {
         const container = formRef.current.closest('.setup-container')
-        
         if (container) {
           const formRect = formRef.current.getBoundingClientRect()
           const containerRect = container.getBoundingClientRect()
-          
           const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49
           const spacing = buttonTopWhenAbsolute - formRect.bottom
-          
           setShouldScroll(spacing < 60)
         }
       }
@@ -104,8 +103,8 @@ const PlanLifestyle = ({ onNext, onBack }: PlanLifestyleProps) => {
           </div>
 
           <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''}`}>
-            <ContentBlueButton 
-              label="다음" 
+            <ContentBlueButton
+              label="다음"
               onClick={handleNext}
               disabled={!isAnySelected}
             />

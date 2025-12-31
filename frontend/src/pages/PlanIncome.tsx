@@ -10,16 +10,25 @@ interface IncomeItem {
   category: string
   amount: number
 }
-
+export interface PlanIncomeData {
+  items: IncomeItem[]
+  total: number
+  unit: '만원/년'
+}
 interface PlanIncomeProps {
-  onNext?: () => void
+  initialValue?: PlanIncomeData        // ✅ 추가
+  onNext?: (data: PlanIncomeData) => void
   onBack?: () => void
 }
 
-const PlanIncome = ({ onNext, onBack }: PlanIncomeProps) => {
-  const [items, setItems] = useState<IncomeItem[]>([
-    { id: '1', category: '직장', amount: 0 }
-  ])
+
+
+const PlanIncome = ({ initialValue, onNext, onBack }: PlanIncomeProps) => {
+  const [items, setItems] = useState<IncomeItem[]>(
+    initialValue?.items?.length
+      ? initialValue.items
+      : [{ id: '1', category: '직장', amount: 0 }]
+  )
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -41,11 +50,21 @@ const PlanIncome = ({ onNext, onBack }: PlanIncomeProps) => {
   }
 
   const handleNext = () => {
-    const total = items.reduce((sum, item) => sum + item.amount, 0)
+    const normalizedItems = items.map(it => ({
+      ...it,
+      amount: Number(it.amount ?? 0),
+    }))
+    const total = normalizedItems.reduce((sum, item) => sum + item.amount, 0)
+
     if (total > 0) {
-      onNext?.()
+      onNext?.({
+        items: normalizedItems,
+        total,
+        unit: '만원/년',
+      })
     }
   }
+
 
   useEffect(() => {
     const checkSpacing = () => {
