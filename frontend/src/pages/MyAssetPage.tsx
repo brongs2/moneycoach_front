@@ -167,4 +167,3 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
 }
 
 export default MyAssetPage
-

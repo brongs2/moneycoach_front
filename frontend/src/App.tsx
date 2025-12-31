@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SetupPersonalInfo from './pages/SetupPersonalInfo'
 import SetupSelectAssets from './pages/SetupSelectAssets'
 import MyAssetPage from './pages/MyAssetPage'
@@ -44,7 +44,9 @@ function App() {
   const [assetData, setAssetData] = useState<Record<string, any>>({})
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<string | null>(null)
   const [lastSetupPage, setLastSetupPage] = useState<Page | null>(null)
-
+  useEffect(() => {
+    loadAll().catch(console.error)
+  }, [])
   const handlePersonalInfoNext = (info: PersonalInfo) => {
     setPersonalInfo(info)
     setCurrentPage('selectAssets')
@@ -83,41 +85,168 @@ function App() {
     }
   }
 
-  const handleSetupComplete = (assetType: string, data: any) => {
-    // 먼저 업데이트된 assetData를 계산
-    const updatedAssetData = { ...assetData, [assetType]: data }
-    setAssetData(updatedAssetData)
-    
-    // 고정된 순서: 저축 → 투자 → 유형자산 → 빚
-    const assetOrder = ['savings', 'investment', 'tangible', 'debt']
-    const currentIndex = assetOrder.indexOf(assetType)
-    const nextAssetToInput = assetOrder.slice(currentIndex + 1).find(asset => 
-      selectedAssets.has(asset) && (!updatedAssetData[asset] || updatedAssetData[asset].total === 0)
-    )
-    
-    if (nextAssetToInput) {
-      if (nextAssetToInput === 'savings') {
-        setCurrentPage('setupSavings')
-        setLastSetupPage('setupSavings')
-      } else if (nextAssetToInput === 'investment') {
-        setCurrentPage('setupInvestment')
-        setLastSetupPage('setupInvestment')
-      } else if (nextAssetToInput === 'tangible') {
-        setCurrentPage('setupRealAssets')
-        setLastSetupPage('setupRealAssets')
-      } else if (nextAssetToInput === 'debt') {
-        setCurrentPage('setupDebt')
-        setLastSetupPage('setupDebt')
+  const handleSetupComplete = async (assetType: string, data: any) => {
+    try {
+      // 1) assetType별로 즉시 DB 저장
+      if (assetType === 'savings') {
+        const savingsCategoryMap: Record<string, string> = {
+          '일반 예금': 'DEPOSIT',
+          '적금': 'SAVING',
+          '청약': 'SUBSCRIPTION',
+          '기타': 'ETC',
+        }
+        const payload = {
+          items: (data?.items ?? [])
+            .map((it: any) => ({
+              category: savingsCategoryMap[it.category] ?? it.category,
+              amount: Number(it.amount ?? 0),
+            }))
+            .filter((x: any) => x.amount > 0),
+        }
+        await postCategory(`${API}/savings/bulk`, payload)
       }
-    } else {
+
+      if (assetType === 'investment') {
+        const investmentCategoryMap: Record<string, string> = {
+          '주식': 'STOCK',
+          '부동산': 'REAL_ESTATE',
+          '암호화폐': 'CRYPTO',
+          '기타': 'ETC',
+        }
+        const payload = {
+          items: (data?.items ?? [])
+            .map((it: any) => ({
+              category: investmentCategoryMap[it.category] ?? it.category,
+              amount: Number(it.amount ?? 0),
+            }))
+            .filter((x: any) => x.amount > 0),
+        }
+        await postCategory(`${API}/investments/bulk`, payload)
+      }
+
+      if (assetType === 'tangible') {
+        const assetCategoryMap2: Record<string, string> = {
+          '집': 'HOUSE',
+          '오피스텔': 'OFFICETEL',
+          '상가': 'STORE',
+          '기타': 'ETC',
+        }
+        const payload = {
+          items: (data?.items ?? []).map((it: any) => ({
+            category: assetCategoryMap2[it.category] ?? it.category,
+            amount: Number(it.amount ?? 0),
+            loan_amount: Number(it.loan_amount ?? 0),
+            interest_rate: Number(it.interest_rate ?? 0),
+            repay_amount: Number(it.repay_amount ?? 0),
+          })),
+        }
+        await postCategory(`${API}/assets/bulk`, payload)
+      }
+
+      if (assetType === 'debt') {
+        const debtCategoryMap: Record<string, string> = {
+          '학자금 대출': 'STUDENT_LOAN',
+          '신용 대출': 'CREDIT',
+          '주택 대출': 'MORTGAGE',
+          '기타': 'ETC',
+        }
+        const payload = {
+          items: (data?.items ?? [])
+            .map((it: any) => ({
+              category: debtCategoryMap[it.category] ?? it.category,
+              loan_amount: Number(it.loan_amount ?? 0),
+              repay_amount: Number(it.repay_amount ?? 0),
+              interest_rate: Number(it.interest_rate ?? 0),
+              compound: it.compound ?? 'COMPOUND',
+            }))
+            .filter((x: any) => x.loan_amount > 0),
+        }
+        await postCategory(`${API}/debts/bulk`, payload)
+      }
+
+      // 2) 저장 후, DB에서 다시 로드해서 화면 데이터 갱신
+      await loadAll()
+
+      // 3) 입력 흐름 계속(다음 페이지로 이동)
+      setCurrentPage('myAssetPage')
+    } catch (e) {
+      console.error('저장 실패', e)
+      // 실패해도 일단 myAssetPage로
       setCurrentPage('myAssetPage')
     }
   }
 
+
+  
   const handleAssetClick = (assetType: string) => {
     setSelectedAssetForDetail(assetType)
     setCurrentPage('assetDetail') 
   }
+  const API = 'http://localhost:8000/api'
+
+const fetchJson = async (url: string) => {
+  const res = await fetch(url, { method: 'GET' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`GET failed ${url} (${res.status}) ${text}`)
+  }
+  return res.json()
+}
+
+const loadAll = async () => {
+  const [savingsRows, investmentRows, assetRows, debtRows] = await Promise.all([
+    fetchJson(`${API}/savings`),
+    fetchJson(`${API}/investments`),
+    fetchJson(`${API}/assets`),
+    fetchJson(`${API}/debts`),
+  ])
+
+  const savingsItems = (savingsRows ?? []).map((r: any) => ({
+    category: r.category,
+    amount: Number(r.amount ?? 0),
+  }))
+  const savingsTotal = savingsItems.reduce((s: number, x: any) => s + x.amount, 0)
+
+  const investmentItems = (investmentRows ?? []).map((r: any) => ({
+    category: r.category,
+    amount: Number(r.amount ?? 0),
+  }))
+  const investmentTotal = investmentItems.reduce((s: number, x: any) => s + x.amount, 0)
+
+  const tangibleItems = (assetRows ?? []).map((r: any) => ({
+    category: r.category,
+    amount: Number(r.amount ?? 0),
+    loan_amount: Number(r.loan_amount ?? 0),
+    interest_rate: Number(r.interest_rate ?? 0),
+    repay_amount: Number(r.repay_amount ?? 0),
+  }))
+  const tangibleTotal = tangibleItems.reduce((s: number, x: any) => s + x.amount, 0)
+
+  const debtItems = (debtRows ?? []).map((r: any) => ({
+    category: r.category,
+    loan_amount: Number(r.loan_amount ?? 0),
+    repay_amount: Number(r.repay_amount ?? 0),
+    interest_rate: Number(r.interest_rate ?? 0),
+    compound: r.compound ?? 'COMPOUND',
+  }))
+  const debtTotal = debtItems.reduce((s: number, x: any) => s + x.loan_amount, 0)
+
+  setAssetData({
+    savings: { items: savingsItems, total: savingsTotal },
+    investment: { items: investmentItems, total: investmentTotal },
+    tangible: { items: tangibleItems, total: tangibleTotal },
+    debt: { items: debtItems, total: debtItems.reduce((s: number, x: any) => s + (x.loan_amount || 0), 0) },
+  })
+
+  // (선택) 메인페이지/차트 표시용으로 자동 선택 세팅
+  const selected = new Set<string>()
+  if (savingsItems.length) selected.add('savings')
+  if (investmentItems.length) selected.add('investment')
+  if (tangibleItems.length) selected.add('tangible')
+  if (debtItems.length) selected.add('debt')
+  setSelectedAssets(selected)
+}
+
 async function postCategory(url: string, payload: any) {
   console.log(`➡️ POST ${url}`)
   console.log('📤 payload:', JSON.stringify(payload, null, 2))
@@ -149,6 +278,7 @@ async function postCategory(url: string, payload: any) {
   console.log(`✅ API SUCCESS ${url}`, data)
   return data
 }
+
 
   const handleGoToMain = async () => {
   const submissionData = prepareSubmissionData()
@@ -266,7 +396,7 @@ async function postCategory(url: string, payload: any) {
       )
     }
 
-
+    
     setCurrentPage('mainPage')
   } catch (e) {
     console.error('전송 실패', e)
