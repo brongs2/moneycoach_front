@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import StatusBar from '../components/StatusBar'
 import LoadingBar from '../components/LoadingBar'
 import ContentToggleButton from '../components/ContentToggleButton'
@@ -18,18 +18,48 @@ interface DebtItem {
 interface SetupDebtProps {
   onComplete: (data: any) => void
   onBack: () => void
+  initialValue?: { items?: any[]; total?: number }
+  onDataChange?: (data: any) => void
 }
 
-const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
-  const [completedItems, setCompletedItems] = useState<DebtItem[]>([])
-  const [currentItem, setCurrentItem] = useState<DebtItem>({
-    id: 'current',
-    category: '학자금 대출',
-    compound: '복리',     // ✅ 기본값(토글 옵션과 맞추기)
-    loan_amount: 0,
-    interest_rate: 0,
-    repay_amount: 0,
-  })
+const SetupDebt = ({ onComplete, onBack, initialValue, onDataChange }: SetupDebtProps) => {
+  const hydrate = (rawItems?: any[]): { completed: DebtItem[]; current: DebtItem } => {
+    const base: DebtItem = {
+      id: 'current',
+      category: '학자금 대출',
+      compound: '복리',
+      loan_amount: 0,
+      interest_rate: 0,
+      repay_amount: 0,
+    }
+
+    if (!rawItems || rawItems.length === 0) return { completed: [], current: base }
+
+    const mapped: DebtItem[] = rawItems.map((it: any, idx: number) => {
+      const compoundRaw = it.compound ?? it.category ?? 'COMPOUND'
+      const compoundText =
+        compoundRaw === 'SIMPLE' || compoundRaw === '단리' ? '단리' : '복리'
+      return {
+        id: String(idx + 1),
+        category: it.category ?? '학자금 대출',
+        compound: compoundText,
+        loan_amount: Number(it.loan_amount ?? it.amount ?? 0),
+        interest_rate: Number(it.interest_rate ?? it.interestRate ?? 0),
+        repay_amount: Number(it.repay_amount ?? it.monthlyPayment ?? 0),
+      }
+    })
+
+    const last = mapped[mapped.length - 1]
+    const completed = mapped.slice(0, -1)
+    return {
+      completed,
+      current: { ...last, id: 'current' },
+    }
+  }
+
+  const hydrated = hydrate(initialValue?.items)
+  const [completedItems, setCompletedItems] = useState<DebtItem[]>(hydrated.completed)
+  const [currentItem, setCurrentItem] = useState<DebtItem>(hydrated.current)
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -38,15 +68,25 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
 
   const handleAddMore = () => {
     const itemToAdd = { ...currentItem, id: Date.now().toString() }
-    setCompletedItems([...completedItems, itemToAdd])
+    const updatedCompleted = [...completedItems, itemToAdd]
+    setCompletedItems(updatedCompleted)
 
-    setCurrentItem({
+    const newCurrent = {
       id: 'current',
       category: '학자금 대출',
       compound: '복리',
       loan_amount: 0,
       interest_rate: 0,
       repay_amount: 0,
+    }
+    setCurrentItem(newCurrent)
+    
+    // 실시간으로 데이터 변경 알림
+    const allItems = updatedCompleted.filter(item => item.loan_amount > 0)
+    const total = allItems.reduce((sum, item) => sum + item.loan_amount, 0)
+    onDataChange?.({
+      items: allItems,
+      total,
     })
   }
 
@@ -54,11 +94,29 @@ const SetupDebt = ({ onComplete, onBack }: SetupDebtProps) => {
     field: 'category' | 'compound' | 'loan_amount' | 'interest_rate' | 'repay_amount',
     value: string | number
   ) => {
-    setCurrentItem({ ...currentItem, [field]: value })
+    const updated = { ...currentItem, [field]: value }
+    setCurrentItem(updated)
+    
+    // 실시간으로 데이터 변경 알림
+    const allItems = updated.loan_amount > 0 ? [...completedItems, updated] : completedItems
+    const total = allItems.reduce((sum, item) => sum + item.loan_amount, 0)
+    onDataChange?.({
+      items: allItems.filter(item => item.loan_amount > 0),
+      total,
+    })
   }
 
   const handleDeleteCompletedItem = (id: string) => {
-    setCompletedItems(completedItems.filter(item => item.id !== id))
+    const updatedCompleted = completedItems.filter(item => item.id !== id)
+    setCompletedItems(updatedCompleted)
+    
+    // 실시간으로 데이터 변경 알림
+    const allItems = currentItem.loan_amount > 0 ? [...updatedCompleted, currentItem] : updatedCompleted
+    const total = allItems.reduce((sum, item) => sum + item.loan_amount, 0)
+    onDataChange?.({
+      items: allItems.filter(item => item.loan_amount > 0),
+      total,
+    })
   }
 
   const handleNext = () => {

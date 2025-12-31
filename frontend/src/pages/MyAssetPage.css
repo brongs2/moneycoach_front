@@ -182,8 +182,14 @@
 }
 
 .asset-icon {
-  font-size: 44px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asset-icon svg {
+  display: block;
 }
 
 .asset-info {
