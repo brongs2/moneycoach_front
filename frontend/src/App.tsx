@@ -1,5 +1,5 @@
 // App.tsx (정리본: plan submit + asset setup + page routing)
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import SetupPersonalInfo from './pages/SetupPersonalInfo'
 import SetupSelectAssets from './pages/SetupSelectAssets'
 import MyAssetPage from './pages/MyAssetPage'
@@ -543,7 +543,11 @@ function buildPlanBody(planState: any) {
     inflation: 0,
     retirement_year: 0,
     expected_death_year: 0,
-    priority: { allocations: [] }, // lifestyle -> priority는 나중에 변환
+    priority: {
+      allocations: [],
+      // 백엔드가 문자열 리스트를 바탕으로 priority를 계산할 수 있도록 전달
+      lifestyles: planState.lifestyle?.preferences ?? [],
+    },
   }
 }
 
