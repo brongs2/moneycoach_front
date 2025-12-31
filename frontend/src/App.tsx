@@ -15,6 +15,8 @@ import PlanOutcome from './pages/PlanOutcome'
 import PlanTaxRate from './pages/PlanTaxRate'
 import PlanLifestyle from './pages/PlanLifestyle'
 import './App.css'
+// api/plans.ts
+import type { PlanDetailResponse } from './types/plan'
 
 import type {
   PlanState,
@@ -54,7 +56,7 @@ interface PersonalInfo {
 // App
 // =====================
 function App() {
-  const API = 'http://localhost:8000/api'
+  const API = 'http://192.168.0.20:8000/api'
 
   const [currentPage, setCurrentPage] = useState<Page>('personalInfo')
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null)
@@ -772,4 +774,15 @@ async function submitPlanAll(API: string, planState: any) {
   ])
 
   return { planId }
+}
+
+
+
+export async function fetchPlanDetail(API: string, planId: number): Promise<PlanDetailResponse> {
+  const res = await fetch(`${API}/plans/${planId}/`, { method: 'GET' }) // 슬래시 통일 추천
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`GET /plans/${planId} failed (${res.status}) ${text}`)
+  }
+  return res.json()
 }

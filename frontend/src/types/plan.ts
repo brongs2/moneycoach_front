@@ -57,3 +57,73 @@ export interface PlanState {
   taxRate?: PlanTaxRateData
   lifestyle?: PlanLifestyleData
 }
+
+
+/// plan detail
+export type Frequency = 'YEARLY' | 'MONTHLY' | 'WEEKLY' | 'DAILY'
+
+export type RevenueCategory = 'INCOME' // 필요하면 enum 확장
+export type ExpenseCategory = 'EXPENSE' // 필요하면 enum 확장
+
+export type PriorityAllocation = {
+  bucket: string
+  type: 'SAVINGS' | 'INVEST' | 'DEBT' | string
+  weight: number // 서버가 0~1이면 number, 0~100이면 number
+}
+
+export type PlanPriority = {
+  allocations: PriorityAllocation[]
+}
+
+export type PlanRevenue = {
+  id: number
+  plan_id: number
+  category: RevenueCategory | string
+  amount: number
+  frequency: Frequency
+  start_date: string
+  end_date: string
+  created_at: string
+  updated_at: string | null
+}
+
+export type PlanExpense = {
+  id: number
+  plan_id: number
+  category: ExpenseCategory | string
+  amount: number
+  frequency: Frequency
+  start_date: string
+  end_date: string
+  created_at: string
+  updated_at: string | null
+}
+
+export type PlanDetailResponse = {
+  id: number
+  user_id: number
+  title: string
+  description: string | null
+  roi: number
+  dividend: number
+  inflation: number
+  priority: PlanPriority
+
+  created_at: string
+  updated_at: string | null
+
+  revenues: PlanRevenue[]
+  expenses: PlanExpense[]
+
+  labels: string[] // summary["labels"]가 문자열 배열이라고 가정
+  net_worth: number
+  net_cash_flow: number
+  total_repayment: number
+  total_savings: number
+  total_investments: number
+  total_debts: number
+  total_assets: number
+
+  retirement_year: number
+  expected_death_year: number
+}
