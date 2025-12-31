@@ -3,6 +3,7 @@ import type { PlanState } from '../types/plan'
 import StatusBar from '../components/StatusBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import NavigationBar from '../components/NavigationBar'
+import { SavingsIcon, InvestmentIcon, TangibleAssetIcon, DebtIcon } from '../components/AssetIcons'
 import './MainPage.css'
 
 interface MainPageProps {
@@ -171,12 +172,20 @@ const MainPage = ({ assetData,planState, onPlanClick }: MainPageProps) => {
               </div>
               <div className="asset-divider" />
               <div className="asset-breakdown">
-                {assetBreakdown.map((item) => (
-                  <div key={item.key} className="asset-breakdown-item">
-                    <div className="asset-icon" />
-                    <span className="asset-amount">{formatCurrencyFull(item.amount)}</span>
-                  </div>
-                ))}
+                {assetBreakdown.map((item) => {
+                  const iconMap: Record<string, React.ReactNode> = {
+                    savings: <SavingsIcon selected={false} style={{ width: '24px', height: '28px' }} />,
+                    investment: <InvestmentIcon selected={false} style={{ width: '24px', height: '20px' }} />,
+                    tangible: <TangibleAssetIcon selected={false} style={{ width: '24px', height: '21px' }} />,
+                    debt: <DebtIcon selected={false} style={{ width: '24px', height: '25px' }} />,
+                  }
+                  return (
+                    <div key={item.key} className="asset-breakdown-item">
+                      <div className="asset-icon">{iconMap[item.key]}</div>
+                      <span className="asset-amount">{formatCurrencyFull(item.amount)}</span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>

@@ -1,4 +1,5 @@
 // Asset Icons - Figma 디자인 기반 SVG 아이콘 컴포넌트
+import React from 'react'
 
 interface IconProps {
   className?: string
@@ -9,23 +10,24 @@ interface IconProps {
 // 저축 아이콘: 연한 파란색 배경 위에 파란색 사각형 2개 (44*52)
 export const SavingsIcon = ({ className, style, selected = false }: IconProps) => {
   const primaryColor = selected ? 'var(--bgwhite, #fcfcfc)' : 'var(--moneyblue, #4068ff)'
-  const lightColor = selected ? 'rgba(252, 252, 252, 0.3)' : '#c7d3ff'
+  const lightColor = selected ? 'var(--lightmoneyblue, #c7d3ff)' : 'var(--lightmoneyblue, #c7d3ff)'
   
   return (
     <svg
       width="44"
-      height="52"
-      viewBox="0 0 80 80"
+      height="52"  
+      viewBox="21 15 44 52"
       fill="none"
       className={className}
       style={style}
     >
-      {/* 연한 파란색 배경 */}
-      <rect x="21" y="36" width="44" height="31" rx="3" fill={lightColor} />
+      
       {/* 파란색 사각형 1 */}
       <rect x="27" y="15" width="13" height="13" rx="2" fill={primaryColor} />
       {/* 파란색 사각형 2 */}
       <rect x="45" y="30" width="13" height="13" rx="2" fill={primaryColor} />
+      {/* 연한 파란색 배경 */}
+      <rect x="21" y="36" width="44" height="31" rx="3" fill={lightColor} />
     </svg>
   )
 }
@@ -33,13 +35,13 @@ export const SavingsIcon = ({ className, style, selected = false }: IconProps) =
 // 투자 아이콘: 막대 그래프 (4개의 막대) (46*39)
 export const InvestmentIcon = ({ className, style, selected = false }: IconProps) => {
   const primaryColor = selected ? 'var(--bgwhite, #fcfcfc)' : 'var(--moneyblue, #4068ff)'
-  const lightColor = selected ? 'rgba(252, 252, 252, 0.3)' : '#c7d3ff'
+  const lightColor = selected ? 'var(--lightmoneyblue, #c7d3ff)' : 'var(--lightmoneyblue, #c7d3ff)'
   
   return (
     <svg
       width="46"
       height="39"
-      viewBox="0 0 80 80"
+      viewBox="20 21 46 39"
       fill="none"
       className={className}
       style={style}
@@ -59,13 +61,13 @@ export const InvestmentIcon = ({ className, style, selected = false }: IconProps
 // 유형자산 아이콘: 집 모양 (3개의 건물 + 창문과 문) (52*46)
 export const TangibleAssetIcon = ({ className, style, selected = false }: IconProps) => {
   const primaryColor = selected ? 'var(--bgwhite, #fcfcfc)' : 'var(--moneyblue, #4068ff)'
-  const lightColor = selected ? 'rgba(252, 252, 252, 0.3)' : '#c7d3ff'
+  const lightColor = selected ? 'var(--lightmoneyblue, #c7d3ff)' : 'var(--lightmoneyblue, #c7d3ff)'
   
   return (
     <svg
       width="52"
       height="46"
-      viewBox="0 0 80 80"
+      viewBox="16 18 52 46"
       fill="none"
       className={className}
       style={style}
@@ -93,23 +95,24 @@ export const TangibleAssetIcon = ({ className, style, selected = false }: IconPr
 // 부채 아이콘: 연한 파란색 배경 위에 파란색 사각형 2개 (44*45)
 export const DebtIcon = ({ className, style, selected = false }: IconProps) => {
   const primaryColor = selected ? 'var(--bgwhite, #fcfcfc)' : 'var(--moneyblue, #4068ff)'
-  const lightColor = selected ? 'rgba(252, 252, 252, 0.3)' : '#c7d3ff'
+  const lightColor = selected ? 'var(--lightmoneyblue, #c7d3ff)' : 'var(--lightmoneyblue, #c7d3ff)'
   
   return (
     <svg
       width="44"
       height="45"
-      viewBox="0 0 80 80"
+      viewBox="20 18 44 45"
       fill="none"
       className={className}
       style={style}
     >
-      {/* 연한 파란색 배경 */}
-      <rect x="20" y="18" width="44" height="31" rx="3" fill={lightColor} />
+      
       {/* 파란색 사각형 1 */}
       <rect x="31" y="43" width="9" height="9" rx="2" fill={primaryColor} />
       {/* 파란색 사각형 2 */}
       <rect x="43" y="54" width="9" height="9" rx="2" fill={primaryColor} />
+      {/* 연한 파란색 배경 */}
+      <rect x="20" y="18" width="44" height="31" rx="3" fill={lightColor} />
     </svg>
   )
 }
