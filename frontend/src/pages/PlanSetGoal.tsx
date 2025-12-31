@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+// PlanSetGoal.tsx  (smooth 버전: 중복/따닥 방지 포함)
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import StatusBar from '../components/StatusBar'
 import NavigationBar from '../components/NavigationBar'
 import ContentBlueButton from '../components/ContentBlueButton'
@@ -9,11 +10,14 @@ interface PlanSetGoalProps {
   onBack?: () => void
 }
 
+const AUTO_SCROLL_LOCK_MS = 220 // smooth 스크롤이 끝날 정도로만 "짧게" 잠금
+
 const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
   const [age, setAge] = useState('')
   const [assetType, setAssetType] = useState('')
   const [multiplier, setMultiplier] = useState('')
   const [action, setAction] = useState('')
+
   const [showAssetDropdown, setShowAssetDropdown] = useState(false)
   const [showMultiplierDropdown, setShowMultiplierDropdown] = useState(false)
   const [showActionDropdown, setShowActionDropdown] = useState(false)
@@ -26,12 +30,22 @@ const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
   const isAssetTypeFilled = assetType !== ''
   const isMultiplierFilled = multiplier !== ''
   const isActionFilled = action !== ''
-
   const isAllFilled = isAgeFilled && isAssetTypeFilled && isMultiplierFilled && isActionFilled
 
-  // 외부 클릭 시 드롭다운 닫기
   const formRef = useRef<HTMLDivElement>(null)
-  
+  const planContentRef = useRef<HTMLDivElement>(null)
+  const actionDropdownRef = useRef<HTMLDivElement>(null)
+
+  // ✅ smooth 중 사용자 개입(클릭/호버 등)으로 인한 "따닥" 방지용 잠금
+  const isAutoScrollingRef = useRef(false)
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false) // UI(pointerEvents) 제어용
+
+  const setAutoScrolling = (v: boolean) => {
+    isAutoScrollingRef.current = v
+    setIsAutoScrolling(v)
+  }
+
+  // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (formRef.current && !formRef.current.contains(event.target as Node)) {
@@ -40,10 +54,90 @@ const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
         setShowActionDropdown(false)
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const closeOthers = (keep: 'asset' | 'multiplier' | 'action') => {
+    if (keep !== 'asset') setShowAssetDropdown(false)
+    if (keep !== 'multiplier') setShowMultiplierDropdown(false)
+    if (keep !== 'action') setShowActionDropdown(false)
+  }
+
+  // ✅ "열릴 때 1회만" 스크롤 보정
+  const didAdjustRef = useRef(false)
+  const unlockTimerRef = useRef<number | null>(null)
+
+  const lockDuringSmooth = () => {
+    setAutoScrolling(true)
+    if (unlockTimerRef.current) window.clearTimeout(unlockTimerRef.current)
+    unlockTimerRef.current = window.setTimeout(() => {
+      setAutoScrolling(false)
+      unlockTimerRef.current = null
+    }, AUTO_SCROLL_LOCK_MS)
+  }
+
+  useLayoutEffect(() => {
+    if (!showActionDropdown) {
+      didAdjustRef.current = false
+      // 드롭다운 닫히면 잠금도 해제
+      if (unlockTimerRef.current) {
+        window.clearTimeout(unlockTimerRef.current)
+        unlockTimerRef.current = null
+      }
+      setAutoScrolling(false)
+      return
+    }
+
+    if (!actionDropdownRef.current || !planContentRef.current) return
+    if (didAdjustRef.current) return
+    if (isAutoScrollingRef.current) return
+
+    // 렌더/레이아웃 확정 후 계산
+    requestAnimationFrame(() => {
+      const dropdown = actionDropdownRef.current
+      const container = planContentRef.current
+      if (!dropdown || !container) return
+
+      const dropdownRect = dropdown.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+      const overflow = dropdownRect.bottom - containerRect.bottom
+
+      if (overflow > 1) {
+        didAdjustRef.current = true
+        lockDuringSmooth()
+        container.scrollBy({ top: overflow + 10, behavior: 'smooth' })
+      } else {
+        didAdjustRef.current = true
+      }
+    })
+  }, [showActionDropdown])
+
+  // 언마운트 시 타이머 정리
+  useEffect(() => {
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      if (unlockTimerRef.current) window.clearTimeout(unlockTimerRef.current)
+    }
+  }, [])
+
+  // ✅ 스크롤 중에는 휠/터치 스크롤도 막아서 "중첩 smooth"를 확실히 방지
+  useEffect(() => {
+    const el = planContentRef.current
+    if (!el) return
+
+    const prevent = (e: Event) => {
+      if (isAutoScrollingRef.current) {
+        e.preventDefault()
+      }
+    }
+
+    // passive: false 로 preventDefault 가능하게
+    el.addEventListener('wheel', prevent, { passive: false })
+    el.addEventListener('touchmove', prevent, { passive: false })
+
+    return () => {
+      el.removeEventListener('wheel', prevent as any)
+      el.removeEventListener('touchmove', prevent as any)
     }
   }, [])
 
@@ -54,153 +148,199 @@ const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
           <StatusBar />
           <div className="plan-back-button" onClick={onBack}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path
+                d="M15 18L9 12L15 6"
+                stroke="#333"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
         </div>
 
-        <div className="plan-content">
+        <div
+          className="plan-content"
+          ref={planContentRef}
+          // ✅ smooth 진행 중 클릭/호버로 레이아웃/포커스가 흔들리지 않게 잠깐 차단
+          style={{ pointerEvents: isAutoScrolling ? 'none' : 'auto' }}
+        >
           <h1 className="plan-title">제목 1</h1>
-          
+
           <div className="plan-form-wrapper" ref={formRef}>
             <div className="plan-form">
-            <div className="plan-form-item">
-              <div className="plan-input-wrapper plan-input-age">
-                <div className="plan-input-line" />
-                <input
-                  type="text"
-                  className={`plan-input ${isAgeFilled ? 'filled' : ''}`}
-                  placeholder="00"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                />
+              {/* age */}
+              <div className="plan-form-item">
+                <div className="plan-input-wrapper plan-input-age">
+                  <div className="plan-input-line" />
+                  <input
+                    type="text"
+                    className={`plan-input ${isAgeFilled ? 'filled' : ''}`}
+                    placeholder="00"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                  />
+                </div>
+                <span className="plan-label">세까지</span>
               </div>
-              <span className="plan-label">세까지</span>
-            </div>
 
-            <div className="plan-form-item">
-              <div className="plan-input-wrapper plan-input-asset">
-                <div className="plan-input-line" />
-                <input
-                  type="text"
-                  className={`plan-input ${isAssetTypeFilled ? 'filled' : ''}`}
-                  placeholder="현재 자산"
-                  value={assetType}
-                  readOnly
-                  onClick={() => {
-                    setShowAssetDropdown(!showAssetDropdown)
-                    setShowMultiplierDropdown(false)
-                    setShowActionDropdown(false)
-                  }}
-                />
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
-                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {showAssetDropdown && (
-                  <div className="plan-dropdown">
-                    {assetOptions.map((option) => (
-                      <div
-                        key={option}
-                        className="plan-dropdown-item"
-                        onClick={() => {
-                          setAssetType(option)
-                          setShowAssetDropdown(false)
-                        }}
-                      >
-                        {option}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <span className="plan-label">의</span>
-            </div>
+              {/* asset */}
+              <div className="plan-form-item">
+                <div className="plan-input-wrapper plan-input-asset">
+                  <div className="plan-input-line" />
+                  <input
+                    type="text"
+                    className={`plan-input ${isAssetTypeFilled ? 'filled' : ''}`}
+                    placeholder="현재 자산"
+                    value={assetType}
+                    readOnly
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setShowAssetDropdown((v) => !v)
+                      closeOthers('asset')
+                    }}
+                  />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
 
-            <div className="plan-form-item">
-              <div className="plan-input-wrapper plan-input-multiplier">
-                <div className="plan-input-line" />
-                <input
-                  type="text"
-                  className={`plan-input ${isMultiplierFilled ? 'filled' : ''}`}
-                  placeholder="00배"
-                  value={multiplier}
-                  readOnly
-                  onClick={() => {
-                    setShowMultiplierDropdown(!showMultiplierDropdown)
-                    setShowAssetDropdown(false)
-                    setShowActionDropdown(false)
-                  }}
-                />
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
-                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {showMultiplierDropdown && (
-                  <div className="plan-dropdown">
-                    {multiplierOptions.map((option) => (
-                      <div
-                        key={option}
-                        className="plan-dropdown-item"
-                        onClick={() => {
-                          setMultiplier(option)
-                          setShowMultiplierDropdown(false)
-                        }}
-                      >
-                        {option}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  {showAssetDropdown && (
+                    <div className="plan-dropdown">
+                      {assetOptions.map((option) => (
+                        <div
+                          key={option}
+                          className="plan-dropdown-item"
+                          onMouseDown={(e) => e.preventDefault()} // ✅ 포커스/자동스크롤 방지
+                          onClick={() => {
+                            setAssetType(option)
+                            setShowAssetDropdown(false)
+                          }}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span className="plan-label">의</span>
               </div>
-              <span className="plan-label">만큼</span>
-            </div>
 
-            <div className="plan-form-item">
-              <div className="plan-input-wrapper plan-input-action">
-                <div className="plan-input-line" />
-                <input
-                  type="text"
-                  className={`plan-input ${isActionFilled ? 'filled' : ''}`}
-                  placeholder="확장 시키겠습니다"
-                  value={action}
-                  readOnly
-                  onClick={() => {
-                    setShowActionDropdown(!showActionDropdown)
-                    setShowAssetDropdown(false)
-                    setShowMultiplierDropdown(false)
-                  }}
-                />
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
-                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {showActionDropdown && (
-                  <div className="plan-dropdown">
-                    {actionOptions.map((option) => (
-                      <div
-                        key={option}
-                        className="plan-dropdown-item"
-                        onClick={() => {
-                          setAction(option)
-                          setShowActionDropdown(false)
-                        }}
-                      >
-                        {option}
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {/* multiplier */}
+              <div className="plan-form-item">
+                <div className="plan-input-wrapper plan-input-multiplier">
+                  <div className="plan-input-line" />
+                  <input
+                    type="text"
+                    className={`plan-input ${isMultiplierFilled ? 'filled' : ''}`}
+                    placeholder="00배"
+                    value={multiplier}
+                    readOnly
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setShowMultiplierDropdown((v) => !v)
+                      closeOthers('multiplier')
+                    }}
+                  />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+
+                  {showMultiplierDropdown && (
+                    <div className="plan-dropdown">
+                      {multiplierOptions.map((option) => (
+                        <div
+                          key={option}
+                          className="plan-dropdown-item"
+                          onMouseDown={(e) => e.preventDefault()} // ✅ 포커스/자동스크롤 방지
+                          onClick={() => {
+                            setMultiplier(option)
+                            setShowMultiplierDropdown(false)
+                          }}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span className="plan-label">만큼</span>
               </div>
-            </div>
+
+              {/* action */}
+              <div className="plan-form-item">
+                <div className="plan-input-wrapper plan-input-action">
+                  <div className="plan-input-line" />
+                  <input
+                    type="text"
+                    className={`plan-input ${isActionFilled ? 'filled' : ''}`}
+                    placeholder="확장 시키겠습니다"
+                    value={action}
+                    readOnly
+                    tabIndex={-1}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setShowActionDropdown((v) => !v)
+                      closeOthers('action')
+                    }}
+                  />
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+
+                  {showActionDropdown && (
+                    <div className="plan-dropdown" ref={actionDropdownRef}>
+                      {actionOptions.map((option) => (
+                        <div
+                          key={option}
+                          className="plan-dropdown-item"
+                          onMouseDown={(e) => e.preventDefault()} // ✅ 따닥 방지 핵심
+                          onClick={() => {
+                            setAction(option)
+                            setShowActionDropdown(false)
+                          }}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="plan-bottom">
-            <ContentBlueButton 
-              label="다음" 
+            <ContentBlueButton
+              label="다음"
               onClick={onNext}
-              style={{ 
+              style={{
                 visibility: isAllFilled ? 'visible' : 'hidden',
                 opacity: isAllFilled ? 1 : 0,
-                pointerEvents: isAllFilled ? 'auto' : 'none'
+                pointerEvents: isAllFilled ? 'auto' : 'none',
               }}
             />
           </div>
@@ -215,4 +355,3 @@ const PlanSetGoal = ({ onNext, onBack }: PlanSetGoalProps) => {
 }
 
 export default PlanSetGoal
-

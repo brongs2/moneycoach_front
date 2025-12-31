@@ -1,3 +1,4 @@
+/* PlanSetGoal.css */
 .plan-set-goal {
   background-color: var(--bgwhite, #fcfcfc);
   width: 100%;
@@ -51,6 +52,17 @@
   overflow-y: auto;
   min-height: 0;
   justify-content: flex-start;
+
+  /* ✅ 브라우저가 스크롤 위치를 "자동 보정"하면서 튀는 현상 방지 */
+  overflow-anchor: none;
+
+  /* 스크롤바 숨기기 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.plan-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .plan-title {
@@ -176,6 +188,14 @@
   max-height: 200px;
   overflow-y: auto;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  /* 스크롤바 숨기기 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.plan-dropdown::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .plan-dropdown-item {
@@ -218,4 +238,3 @@
   left: 0;
   right: 0;
 }
-
