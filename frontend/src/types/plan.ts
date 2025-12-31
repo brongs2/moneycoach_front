@@ -35,8 +35,12 @@ export interface PlanOutcomeData {
 }
 
 // ===== Tax =====
+export interface PlantaxRateItem {
+  taxCategory: string
+  taxRate: number
+}
 export interface PlanTaxRateData {
-  taxRate: number // 예: 0~100 또는 0~1 중 너가 정한 기준 (통일!)
+  items: PlantaxRateItem[]
 }
 
 
