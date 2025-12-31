@@ -142,11 +142,16 @@
 }
 
 .asset-icon {
-  width: 24px;
-  height: 20px;
   flex-shrink: 0;
-  background-color: var(--moneyblue, #4068ff);
-  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asset-icon svg {
+  display: block;
+  width: auto;
+  height: auto;
 }
 
 .asset-amount {

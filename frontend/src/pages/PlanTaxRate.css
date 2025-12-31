@@ -111,13 +111,12 @@
 .tax-rate-input-row {
   width: 100%;
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
-  min-width: 0; /* allow children to shrink instead of overflowing */
 }
 
 .tax-rate-category-select {
-  flex: 1 1 0;
+  flex: 1;
   height: 32px;
   border: none;
   border-bottom: 1px solid var(--subtitlegray, #bcbcbc);
@@ -135,20 +134,35 @@
   background-position: right 0 center;
   background-size: 20px 20px;
   padding-right: 24px;
-  min-width: 0; /* avoid overflow when space is tight */
 }
 
 .tax-rate-amount-group {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 0;
+  flex: 1;
   justify-content: flex-end;
   min-height: 32px;
   height: 32px;
   padding-bottom: 0;
   border-bottom: 1px solid var(--subtitlegray, #bcbcbc);
-  min-width: 0; /* allow input to shrink */
+}
+
+.tax-rate-delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+}
+
+.tax-rate-delete-button:hover svg path {
+  stroke: var(--black, #333);
 }
 
 .tax-rate-input {
@@ -160,11 +174,12 @@
   border: none;
   outline: none;
   padding: 0;
-  flex: 1 1 0;
+  flex: 0 1 auto;
+  width: 60px;
+  max-width: 100px;
   height: 29px;
   line-height: 29px;
   text-align: right;
-  min-width: 0; /* prevent overflow on small screens */
 }
 
 .tax-rate-input.filled {

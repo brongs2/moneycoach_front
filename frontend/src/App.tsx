@@ -10,6 +10,7 @@ import SetupDebt from './pages/SetupDebt'
 import AssetDetailPage from './pages/AssetDetailPage'
 import MainPage from './pages/MainPage'
 import PlanSetGoal from './pages/PlanSetGoal'
+import PlanSetSimulationInfo from './pages/PlanSetSimulationInfo'
 import PlanIncome from './pages/PlanIncome'
 import PlanOutcome from './pages/PlanOutcome'
 import PlanTaxRate from './pages/PlanTaxRate'
@@ -21,6 +22,7 @@ import type { PlanDetailResponse } from './types/plan'
 import type {
   PlanState,
   PlanGoalData,
+  PlanSimulationInfoData,
   PlanIncomeData,
   PlanOutcomeData,
   PlanTaxRateData,
@@ -41,6 +43,7 @@ type Page =
   | 'assetDetail'
   | 'mainPage'
   | 'planSetGoal'
+  | 'planSetSimulationInfo'
   | 'planIncome'
   | 'planOutcome'
   | 'planTaxRate'
@@ -317,6 +320,11 @@ function App() {
   // ---------------------
   const handlePlanGoalNext = (goal: PlanGoalData) => {
     setPlanState((prev) => ({ ...prev, goal }))
+    setCurrentPage('planSetSimulationInfo')
+  }
+
+  const handlePlanSimulationInfoNext = (simulationInfo: PlanSimulationInfoData) => {
+    setPlanState((prev) => ({ ...prev, simulationInfo }))
     setCurrentPage('planIncome')
   }
 
@@ -467,12 +475,21 @@ function App() {
         />
       )
 
+    case 'planSetSimulationInfo':
+      return (
+        <PlanSetSimulationInfo
+          initialValue={planState.simulationInfo}
+          onNext={handlePlanSimulationInfoNext}
+          onBack={() => setCurrentPage('planSetGoal')}
+        />
+      )
+
     case 'planIncome':
       return (
         <PlanIncome
           initialValue={planState.income}
           onNext={handlePlanIncomeNext}
-          onBack={() => setCurrentPage('planSetGoal')}
+          onBack={() => setCurrentPage('planSetSimulationInfo')}
         />
       )
 

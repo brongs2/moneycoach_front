@@ -31,7 +31,7 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
   }, 0)
 
   // 원형 그래프 데이터 (값 있는 항목만, 고정된 순서)
-  const pieData = (['savings', 'investment', 'tangible', 'debt'] as const)
+  const allPieData = (['savings', 'investment', 'tangible', 'debt'] as const)
     .filter(assetType => selectedAssets.has(assetType))
     .map(assetType => {
       const data = assetData[assetType] || {}
@@ -42,6 +42,11 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
       }
     })
     .filter(item => item.value > 0)
+  
+  // 부채를 제외한 자산과 부채를 분리
+  const nonDebtPieData = allPieData.filter(item => item.type !== 'debt')
+  const debtPieData = allPieData.find(item => item.type === 'debt')
+  const pieData = debtPieData ? [...nonDebtPieData, debtPieData] : nonDebtPieData
 
   const formatCurrency = (amount: number) => {
     if (amount === 0) return '??? 원'
@@ -86,33 +91,36 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
                     cx="118"
                     cy="118"
                     r="110"
-                    fill="var(--moneyblue, #4068ff)"
+                    fill={pieData[0].type === 'debt' ? 'var(--subtitlegray, #bcbcbc)' : 'var(--moneyblue, #4068ff)'}
                     opacity={0.7}
                     onClick={() => onAssetClick(pieData[0].type)}
                     style={{ cursor: 'pointer' }}
                   />
                 )}
-                {pieData.length > 1 &&
-                  pieData.map((item, index) => {
+                {pieData.length > 1 && (() => {
+                  // MainPage와 동일하게 90도(12시 방향)에서 시작
+                  let currentAngle = 90
+                  const paths: JSX.Element[] = []
+                  
+                  // 부채를 제외한 자산들을 먼저 그리기
+                  nonDebtPieData.forEach((item) => {
                     const percentage = totalAssets > 0 ? (item.value / totalAssets) * 100 : 0
-                    const startAngle = pieData.slice(0, index).reduce((sum, prev) => {
-                      const prevPercentage = totalAssets > 0 ? (prev.value / totalAssets) * 100 : 0
-                      return sum + (prevPercentage / 100) * 360
-                    }, 0)
-                    const endAngle = startAngle + (percentage / 100) * 360
+                    if (percentage === 0) return
                     
-                    if (percentage === 0) return null
+                    const angle = (percentage / 100) * 360
+                    const startAngle = currentAngle
+                    const endAngle = currentAngle + angle
                     
                     const startRad = (startAngle * Math.PI) / 180
                     const endRad = (endAngle * Math.PI) / 180
-                    const largeArcFlag = percentage > 50 ? 1 : 0
+                    const largeArcFlag = angle > 180 ? 1 : 0
                     
                     const x1 = 118 + 110 * Math.cos(startRad)
                     const y1 = 118 + 110 * Math.sin(startRad)
                     const x2 = 118 + 110 * Math.cos(endRad)
                     const y2 = 118 + 110 * Math.sin(endRad)
                     
-                    return (
+                    paths.push(
                       <path
                         key={item.type}
                         d={`M 118 118 L ${x1} ${y1} A 110 110 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
@@ -122,7 +130,42 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
                         style={{ cursor: 'pointer' }}
                       />
                     )
-                  })}
+                    
+                    currentAngle += angle
+                  })
+                  
+                  // 마지막에 부채를 그리기
+                  if (debtPieData) {
+                    const percentage = totalAssets > 0 ? (debtPieData.value / totalAssets) * 100 : 0
+                    if (percentage > 0) {
+                      const angle = (percentage / 100) * 360
+                      const startAngle = currentAngle
+                      const endAngle = currentAngle + angle
+                      
+                      const startRad = (startAngle * Math.PI) / 180
+                      const endRad = (endAngle * Math.PI) / 180
+                      const largeArcFlag = angle > 180 ? 1 : 0
+                      
+                      const x1 = 118 + 110 * Math.cos(startRad)
+                      const y1 = 118 + 110 * Math.sin(startRad)
+                      const x2 = 118 + 110 * Math.cos(endRad)
+                      const y2 = 118 + 110 * Math.sin(endRad)
+                      
+                      paths.push(
+                        <path
+                          key="debt"
+                          d={`M 118 118 L ${x1} ${y1} A 110 110 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                          fill="var(--subtitlegray, #bcbcbc)"
+                          opacity={0.7}
+                          onClick={() => onAssetClick(debtPieData.type)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      )
+                    }
+                  }
+                  
+                  return paths
+                })()}
                 <circle cx="118" cy="118" r="55" fill="var(--bgwhite, #fcfcfc)" />
                 <text x="118" y="108" textAnchor="middle" className="chart-center-label">
                   총 자산
