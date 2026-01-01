@@ -52,7 +52,7 @@ const PlanSetSimulationInfo = ({ initialValue, onNext, onBack }: PlanSetSimulati
           </svg>
         </div>
 
-        <div className="setup-content-scrollable">
+        <div className="setup-content">
           <div className="setup-top">
             <LoadingBar currentStep={2} totalSteps={5} />
             <div className="setup-title">
@@ -67,7 +67,7 @@ const PlanSetSimulationInfo = ({ initialValue, onNext, onBack }: PlanSetSimulati
             </div>
           </div>
 
-          <div className="setup-form setup-form-spaced">
+          <div className="setup-form">
             <div className="simulation-info-item">
               <div className="simulation-info-row">
                 <div className="simulation-info-label">투자 수익률</div>
@@ -135,7 +135,7 @@ const PlanSetSimulationInfo = ({ initialValue, onNext, onBack }: PlanSetSimulati
             </div>
           </div>
 
-          <div className="setup-bottom setup-bottom-spaced">
+          <div className="setup-bottom">
             <ContentBlueButton
               label="다음"
               onClick={handleNext}

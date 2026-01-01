@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import type { PlanGoalData } from '../types/plan'
 
 import StatusBar from '../components/StatusBar'
-import NavigationBar from '../components/NavigationBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import './PlanSetGoal.css'
 
@@ -178,45 +177,48 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
   return (
     <div className="plan-set-goal">
       <div className="setup-container">
-        <div className="plan-header">
+        <div className="setup-header">
           <StatusBar />
-          <div className="plan-back-button" onClick={onBack}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 18L9 12L15 6"
-                stroke="#333"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
+        </div>
+
+        <div className="setup-back-button" onClick={onBack}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M15 18L9 12L15 6"
+              stroke="#333"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
 
         <div
-          className="plan-content"
+          className="setup-content"
           ref={planContentRef}
           // ✅ smooth 진행 중 클릭/호버로 레이아웃/포커스가 흔들리지 않게 잠깐 차단
           style={{ pointerEvents: isAutoScrolling ? 'none' : 'auto' }}
         >
-          <div className="plan-title-wrapper">
-            <input
-              type="text"
-              className="plan-title-input"
-              placeholder="플랜 이름"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <textarea
-              className="plan-description-input"
-              placeholder="플랜에 대한 간단한 설명 작성하기"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={1}
-            />
+          <div className="setup-top">
+            <div className="plan-title-wrapper">
+              <input
+                type="text"
+                className="plan-title-input"
+                placeholder="플랜 이름"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <textarea
+                className="plan-description-input"
+                placeholder="플랜에 대한 간단한 설명 작성하기"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={1}
+              />
+            </div>
           </div>
 
-          <div className="plan-form-wrapper" ref={formRef}>
+          <div className="setup-form" ref={formRef}>
             <div className="plan-form">
               {/* age */}
               <div className="plan-form-item">
@@ -382,7 +384,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
             </div>
           </div>
 
-          <div className="plan-bottom">
+          <div className="setup-bottom">
             <ContentBlueButton
               label="다음"
               onClick={handleNext}
@@ -392,12 +394,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                 pointerEvents: isAllFilled ? 'auto' : 'none',
               }}
             />
-
           </div>
-        </div>
-
-        <div className="plan-navigation">
-          <NavigationBar activeItem="plan" />
         </div>
       </div>
     </div>

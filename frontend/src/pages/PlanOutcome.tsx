@@ -48,14 +48,13 @@ const PlanOutcome = ({ initialValue, onNext, onBack }: PlanOutcomeProps) => {
     }))
     const total = normalizedItems.reduce((sum, item) => sum + item.amount, 0)
 
-    if (total > 0) {
-      onNext?.({
-        items: normalizedItems,
-        total,
-        unit: '만원/년',
-      })
-    }
+    onNext?.({
+      items: normalizedItems,
+      total,
+      unit: '만원/년',
+    })
   }
+
 
   useEffect(() => {
     const checkSpacing = () => {

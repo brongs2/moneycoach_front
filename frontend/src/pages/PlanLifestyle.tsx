@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import StatusBar from '../components/StatusBar'
 import LoadingBar from '../components/LoadingBar'
 import ContentBlueButton from '../components/ContentBlueButton'
@@ -16,8 +16,6 @@ const PlanLifestyle = ({ initialValue, onNext, onBack }: PlanLifestyleProps) => 
   const [selectedLifestyles, setSelectedLifestyles] = useState<Set<string>>(
     new Set(initialValue?.preferences ?? [])
   )
-  const [shouldScroll, setShouldScroll] = useState(false)
-  const formRef = useRef<HTMLDivElement>(null)
 
   const lifestyleOptions = [
     '사치', '안전자산', '비상금',
@@ -44,29 +42,6 @@ const PlanLifestyle = ({ initialValue, onNext, onBack }: PlanLifestyleProps) => 
     }
   }
 
-  useEffect(() => {
-    const checkSpacing = () => {
-      if (formRef.current) {
-        const container = formRef.current.closest('.setup-container')
-        if (container) {
-          const formRect = formRef.current.getBoundingClientRect()
-          const containerRect = container.getBoundingClientRect()
-          const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49
-          const spacing = buttonTopWhenAbsolute - formRect.bottom
-          setShouldScroll(spacing < 60)
-        }
-      }
-    }
-
-    checkSpacing()
-    window.addEventListener('resize', checkSpacing)
-    const timer = setTimeout(checkSpacing, 100)
-
-    return () => {
-      window.removeEventListener('resize', checkSpacing)
-      clearTimeout(timer)
-    }
-  }, [selectedLifestyles])
 
   const isAnySelected = selectedLifestyles.size > 0
 
@@ -83,7 +58,7 @@ const PlanLifestyle = ({ initialValue, onNext, onBack }: PlanLifestyleProps) => 
           </svg>
         </div>
 
-        <div className="setup-content-scrollable">
+        <div className="setup-content">
           <div className="setup-top">
             <LoadingBar currentStep={5} totalSteps={5} />
             <div className="setup-title">
@@ -92,7 +67,7 @@ const PlanLifestyle = ({ initialValue, onNext, onBack }: PlanLifestyleProps) => 
             </div>
           </div>
 
-          <div ref={formRef} className="setup-form setup-form-spaced">
+          <div className="setup-form">
             <div className="lifestyle-grid">
               {lifestyleRows.map((row, rowIdx) => (
                 <div className="lifestyle-row" key={rowIdx}>
@@ -111,7 +86,7 @@ const PlanLifestyle = ({ initialValue, onNext, onBack }: PlanLifestyleProps) => 
             </div>
           </div>
 
-          <div className={`setup-bottom setup-bottom-spaced ${shouldScroll ? 'scrollable' : ''}`}>
+          <div className="setup-bottom">
             <ContentBlueButton
               label="다음"
               onClick={handleNext}

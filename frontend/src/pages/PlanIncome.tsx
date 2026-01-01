@@ -56,28 +56,27 @@ const PlanIncome = ({ initialValue, onNext, onBack }: PlanIncomeProps) => {
     }))
     const total = normalizedItems.reduce((sum, item) => sum + item.amount, 0)
 
-    if (total > 0) {
-      onNext?.({
-        items: normalizedItems,
-        total,
-        unit: '만원/년',
-      })
-    }
+    onNext?.({
+      items: normalizedItems,
+      total,
+      unit: '만원/년',
+    })
   }
+
 
 
   useEffect(() => {
     const checkSpacing = () => {
       if (formRef.current) {
         const container = formRef.current.closest('.setup-container')
-        
+
         if (container) {
           const formRect = formRef.current.getBoundingClientRect()
           const containerRect = container.getBoundingClientRect()
-          
+
           const buttonTopWhenAbsolute = containerRect.bottom - 64 - 49
           const spacing = buttonTopWhenAbsolute - formRect.bottom
-          
+
           setShouldScroll(spacing < 60)
         }
       }

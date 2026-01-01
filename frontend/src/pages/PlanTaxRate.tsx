@@ -21,9 +21,9 @@ const PlanTaxRate = ({ initialValue, onNext, onBack }: PlanTaxRateProps) => {
       ? initialValue.items
       : [{ taxCategory: '소득세', taxRate: 0 }]
   )
-
   const [shouldScroll, setShouldScroll] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
+
 
   const handleAddMore = () => {
     setItems(prev => [...prev, { taxCategory: '소득세', taxRate: 0 }])
@@ -59,7 +59,6 @@ const PlanTaxRate = ({ initialValue, onNext, onBack }: PlanTaxRateProps) => {
       onNext?.({ items: normalized })
     }
   }
-
   useEffect(() => {
     const checkSpacing = () => {
       if (formRef.current) {

@@ -50,12 +50,13 @@
   -webkit-overflow-scrolling: touch;
   padding: 16px 0;
   flex-shrink: 0;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  /* 스크롤바 숨기기 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 .setup-content-scrollable::-webkit-scrollbar {
-  display: none;
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .setup-top {
@@ -213,11 +214,12 @@
   bottom: 64px;
   left: 0;
   right: 0;
-  margin-top: 60px;
+  margin-top: 60px; /* setup-form과 60px 간격 유지 */
 }
 
 .setup-bottom-spaced.scrollable {
   position: relative;
   bottom: auto;
-  margin-top: 60px;
+  margin-top: 60px; /* setup-form과 60px 간격 유지 */
 }
+
