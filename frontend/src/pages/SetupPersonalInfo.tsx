@@ -45,7 +45,7 @@ const SetupPersonalInfo = ({ onNext }: SetupPersonalInfoProps) => {
 
         <div className="setup-content">
           <div className="setup-top">
-            <LoadingBar currentStep={1} totalSteps={4} />
+            <LoadingBar currentStep={0} totalSteps={4} invisible />
             <Title />
           </div>
 

@@ -16,6 +16,8 @@ interface SetupInvestmentProps {
   onBack: () => void
   initialValue?: { items?: Array<{ category: string; amount: number }>; total?: number }
   onDataChange?: (data: any) => void
+  currentStep?: number
+  totalSteps?: number
 }
 
 const SetupInvestment = ({ onComplete, onBack, initialValue, onDataChange }: SetupInvestmentProps) => {
@@ -120,7 +122,7 @@ const SetupInvestment = ({ onComplete, onBack, initialValue, onDataChange }: Set
 
         <div className="setup-content-scrollable">
           <div className="setup-top">
-            <LoadingBar currentStep={3} totalSteps={4} />
+            <LoadingBar currentStep={currentStep} totalSteps={totalSteps} />
             <div className="setup-title">
               <h1 className="title-main">어떤 방식으로<br />투자하고 있나요?</h1>
               <p className="title-subtitle">주식, 부동산, 암호화폐 등 투자하고 있는 내용들을<br />모두 써주세요.</p>

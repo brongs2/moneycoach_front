@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import type { PlanState } from '../types/plan' 
+import { useState, useEffect } from 'react'
+import type { PlanState, PlanDetailResponse } from '../types/plan'
+import { fetchPlanDetail } from '../utils/planApi'
 import StatusBar from '../components/StatusBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import NavigationBar from '../components/NavigationBar'
@@ -10,11 +11,29 @@ interface MainPageProps {
   assetData: Record<string, any>
   planState?: PlanState
   onPlanClick?: () => void
+  API?: string
 }
 
-
-const MainPage = ({ assetData,planState, onPlanClick }: MainPageProps) => {
+const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageProps) => {
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
+  const [planDetail, setPlanDetail] = useState<PlanDetailResponse | null>(null)
+  const [planLoading, setPlanLoading] = useState(false)
+
+  // plan id 5 데이터 로드
+  useEffect(() => {
+    const loadPlanDetail = async () => {
+      try {
+        setPlanLoading(true)
+        const data = await fetchPlanDetail(API, 5)
+        setPlanDetail(data)
+      } catch (error) {
+        console.error('Plan detail 로드 실패:', error)
+      } finally {
+        setPlanLoading(false)
+      }
+    }
+    loadPlanDetail()
+  }, [API])
 
   // 총 자산 계산
   const totalAssets = Object.values(assetData).reduce((sum: number, data: any) => {
@@ -140,6 +159,47 @@ const MainPage = ({ assetData,planState, onPlanClick }: MainPageProps) => {
     return `${amount}만원`
   }
 
+  // plan detail 그래프 데이터 계산
+  const getChartData = () => {
+    if (!planDetail || !planDetail.labels || planDetail.labels.length === 0 || !planDetail.net_worth || planDetail.net_worth.length === 0) {
+      // 데이터가 없으면 기본값 반환
+      return {
+        bars: [56, 77, 109, 129, 120, 109, 56, 56, 56, 56, 56, 56],
+        currentValue: 0,
+        maxValue: 129,
+        currentIndex: 4,
+      }
+    }
+
+    const labels = planDetail.labels
+    const netWorthArray = Array.isArray(planDetail.net_worth) ? planDetail.net_worth : [planDetail.net_worth]
+    
+    // net_worth 배열을 만원 단위로 변환
+    const netWorthInManWon = netWorthArray.map(w => w / 10000)
+    
+    // 최대값 계산
+    const maxNetWorth = Math.max(...netWorthInManWon, 100)
+    const chartHeight = 129 // CSS에서 정의된 높이
+    
+    // 각 라벨별 높이 계산 (실제 net_worth 값 사용)
+    const bars = netWorthInManWon.map(value => {
+      return Math.max(56, (value / maxNetWorth) * chartHeight)
+    })
+
+    // 현재값 인덱스 (마지막 값)
+    const currentIndex = netWorthInManWon.length - 1
+    const currentValue = netWorthInManWon[currentIndex] || 0
+
+    return {
+      bars,
+      currentValue,
+      maxValue: maxNetWorth,
+      currentIndex,
+    }
+  }
+
+  const chartData = getChartData()
+
   return (
     <div className="main-page">
       <div className="setup-container">
@@ -194,22 +254,49 @@ const MainPage = ({ assetData,planState, onPlanClick }: MainPageProps) => {
         <div className="main-chart">
           <div className="chart-container">
             <div className="chart-placeholder">
-              <div className="chart-bars">
-                {[56, 77, 109, 129, 120, 109, 56, 56, 56, 56, 56, 56].map((height, index) => (
-                  <div key={index} className="chart-bar" style={{ height: `${height}px` }} />
-                ))}
-              </div>
-              <div className="chart-line" />
-              <div className="chart-point">
-                <div className="chart-point-outer" />
-                <div className="chart-point-middle" />
-                <div className="chart-point-inner" />
-              </div>
-              <div className="chart-label">8.3억</div>
-              <div className="chart-callout">
-                <p>계획을 세우고</p>
-                <p>미래를 확인해보세요!</p>
-              </div>
+              {planLoading ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
+              ) : (
+                <>
+                  <div className="chart-bars">
+                    {chartData.bars.map((height, index) => (
+                      <div key={index} className="chart-bar" style={{ height: `${height}px` }} />
+                    ))}
+                  </div>
+                  {planDetail && planDetail.labels && planDetail.labels.length > 0 && chartData.bars.length > 0 && (
+                    <>
+                      <div className="chart-line" style={{
+                        left: `${85 + (chartData.currentIndex / chartData.bars.length) * (345 - 85)}px`
+                      }} />
+                      <div className="chart-point" style={{ 
+                        left: `${85 + (chartData.currentIndex / chartData.bars.length) * (345 - 85)}px`,
+                        top: `${73 + (129 - chartData.bars[chartData.currentIndex])}px`
+                      }}>
+                        <div className="chart-point-outer" />
+                        <div className="chart-point-middle" />
+                        <div className="chart-point-inner" />
+                      </div>
+                    </>
+                  )}
+                  <div className="chart-label">
+                    {chartData.currentValue >= 10000 
+                      ? `${(chartData.currentValue / 10000).toFixed(1)}억`
+                      : `${chartData.currentValue.toFixed(0)}만`
+                    }
+                  </div>
+                  {planDetail ? (
+                    <div className="chart-callout">
+                      <p>계획을 세우고</p>
+                      <p>미래를 확인해보세요!</p>
+                    </div>
+                  ) : (
+                    <div className="chart-callout">
+                      <p>계획을 세우고</p>
+                      <p>미래를 확인해보세요!</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

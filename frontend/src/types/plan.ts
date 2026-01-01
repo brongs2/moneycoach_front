@@ -2,6 +2,8 @@
 
 // ===== Goal =====
 export interface PlanGoalData {
+  title?: string           // 플랜 이름
+  description?: string     // 플랜에 대한 간단한 설명
   age: number
   assetType: string        // '현재 자산' | '저축' ... 처럼 나중에 union으로 바꿔도 됨
   multiplier: number       // 1,2,3,5,10 ...
@@ -124,13 +126,13 @@ export type PlanDetailResponse = {
   expenses: PlanExpense[]
 
   labels: string[] // summary["labels"]가 문자열 배열이라고 가정
-  net_worth: number
-  net_cash_flow: number
-  total_repayment: number
-  total_savings: number
-  total_investments: number
-  total_debts: number
-  total_assets: number
+  net_worth: number[] // 연도별 net_worth 배열
+  net_cash_flow: number[]
+  total_repayment: number[]
+  total_savings: number[]
+  total_investments: number[]
+  total_debts: number[]
+  total_assets: number[]
 
   retirement_year: number
   expected_death_year: number

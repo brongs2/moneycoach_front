@@ -16,6 +16,8 @@ interface PlanSetGoalProps {
 const AUTO_SCROLL_LOCK_MS = 220 // smooth 스크롤이 끝날 정도로만 "짧게" 잠금
 
 const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
+  const [title, setTitle] = useState(initialValue?.title ?? '')
+  const [description, setDescription] = useState(initialValue?.description ?? '')
   const [age, setAge] = useState(initialValue?.age ? String(initialValue.age) : '')
   const [assetType, setAssetType] = useState(initialValue?.assetType ?? '')
   const [multiplier, setMultiplier] = useState(
@@ -31,11 +33,13 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
   const multiplierOptions = ['1배', '2배', '3배', '5배', '10배']
   const actionOptions = ['확장 시키겠습니다', '유지하겠습니다', '감소시키겠습니다']
 
+  const isTitleFilled = title.trim() !== ''
+  const isDescriptionFilled = description.trim() !== ''
   const isAgeFilled = age !== ''
   const isAssetTypeFilled = assetType !== ''
   const isMultiplierFilled = multiplier !== ''
   const isActionFilled = action !== ''
-  const isAllFilled = isAgeFilled && isAssetTypeFilled && isMultiplierFilled && isActionFilled
+  const isAllFilled = isTitleFilled && isDescriptionFilled && isAgeFilled && isAssetTypeFilled && isMultiplierFilled && isActionFilled
 
   const formRef = useRef<HTMLDivElement>(null)
   const planContentRef = useRef<HTMLDivElement>(null)
@@ -123,6 +127,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
     return Number.isFinite(n) ? n : 0
   }
 
+
   const handleNext = () => {
     if (!isAllFilled) return
 
@@ -133,6 +138,8 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
     if (!Number.isFinite(mulNum) || mulNum <= 0) return
 
     onNext?.({
+      title: title.trim(),
+      description: description.trim(),
       age: ageNum,
       assetType,
       multiplier: mulNum,
@@ -192,7 +199,22 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
           // ✅ smooth 진행 중 클릭/호버로 레이아웃/포커스가 흔들리지 않게 잠깐 차단
           style={{ pointerEvents: isAutoScrolling ? 'none' : 'auto' }}
         >
-          <h1 className="plan-title">제목 1</h1>
+          <div className="plan-title-wrapper">
+            <input
+              type="text"
+              className="plan-title-input"
+              placeholder="플랜 이름"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <textarea
+              className="plan-description-input"
+              placeholder="플랜에 대한 간단한 설명 작성하기"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={1}
+            />
+          </div>
 
           <div className="plan-form-wrapper" ref={formRef}>
             <div className="plan-form">

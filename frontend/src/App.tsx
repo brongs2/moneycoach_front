@@ -15,6 +15,7 @@ import PlanIncome from './pages/PlanIncome'
 import PlanOutcome from './pages/PlanOutcome'
 import PlanTaxRate from './pages/PlanTaxRate'
 import PlanLifestyle from './pages/PlanLifestyle'
+import PlanPage from './pages/PlanPage'
 import './App.css'
 // api/plans.ts
 import type { PlanDetailResponse } from './types/plan'
@@ -48,6 +49,7 @@ type Page =
   | 'planOutcome'
   | 'planTaxRate'
   | 'planLifestyle'
+  | 'planPage'
 
 interface PersonalInfo {
   purpose: string
@@ -60,8 +62,8 @@ interface PersonalInfo {
 // =====================
 function App() {
   // 개발 환경에서는 vite proxy를 통해 /api로 프록시됨 (vite.config.ts 참고)
-  // 같은 컴퓨터에서 프론트엔드와 백엔드를 모두 실행하면 자동으로 localhost:8000으로 연결됨
-  const API = 'http://192.168.0.20:8000/api'
+  // vite proxy가 /api 요청을 http://192.168.0.20:8000으로 전달함
+  const API = '/api'
 
   const [currentPage, setCurrentPage] = useState<Page>('personalInfo')
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null)
@@ -72,6 +74,7 @@ function App() {
   const [lastSetupPage, setLastSetupPage] = useState<Page | null>(null)
 
   const [planState, setPlanState] = useState<PlanState>({})
+  const [planId, setPlanId] = useState<number | undefined>(undefined)
 
   // 최초 로드
   useEffect(() => {
@@ -83,9 +86,6 @@ function App() {
   // ---------------------
   const handlePersonalInfoNext = (info: PersonalInfo) => {
     setPersonalInfo(info)
-    // selectAssets 페이지로 이동할 때 선택과 데이터를 초기화 (사용자가 처음부터 선택할 수 있도록)
-    setSelectedAssets(new Set())
-    setAssetData({})
     setCurrentPage('selectAssets')
   }
 
@@ -353,13 +353,14 @@ function App() {
     setPlanState(finalPlan)
 
     try {
-      const { planId } = await submitPlanAll(API, finalPlan)
-      console.log('✅ saved planId =', planId)
+      const { planId: savedPlanId } = await submitPlanAll(API, finalPlan)
+      console.log('✅ saved planId =', savedPlanId)
+      setPlanId(savedPlanId)
+      setCurrentPage('planPage')
     } catch (e) {
       console.error('❌ submit failed', e)
+      setCurrentPage('planPage') // 실패해도 PlanPage로 이동
     }
-
-    setCurrentPage('mainPage')
   }
 
   // ---------------------
@@ -388,10 +389,40 @@ function App() {
   const handleBackFromDetail = () => setCurrentPage('myAssetPage')
 
   // ---------------------
+  // Loading Bar 계산 (setup 페이지 진행도)
+  // ---------------------
+  const getSetupProgress = () => {
+    // selectAssets(1) + 선택한 자산 수 + myAssetPage(1) = 총 단계 수
+    const totalSteps = 2 + selectedAssets.size
+    const assetOrder = ['savings', 'investment', 'tangible', 'debt']
+    const selectedOrder = assetOrder.filter(a => selectedAssets.has(a))
+    
+    return { totalSteps, selectedOrder }
+  }
+
+  const getSetupCurrentStep = (currentAssetType: string) => {
+    const { selectedOrder } = getSetupProgress()
+    const currentIndex = selectedOrder.indexOf(currentAssetType)
+    // selectAssets(1) + 현재 setup 페이지보다 앞에 있는 완료된 페이지 수 + 현재 페이지(1)
+    const completedBefore = selectedOrder
+      .slice(0, currentIndex)
+      .filter(a => assetData[a] && assetData[a].total > 0).length
+    return 1 + completedBefore + 1 // 1(selectAssets) + 완료된 수 + 현재 페이지
+  }
+
+  const getMyAssetPageCurrentStep = () => {
+    const { selectedOrder } = getSetupProgress()
+    // selectAssets(1) + 모든 선택한 자산 완료 수 + myAssetPage(1)
+    const completedCount = selectedOrder.filter(a => assetData[a] && assetData[a].total > 0).length
+    return 1 + completedCount + 1 // 1(selectAssets) + 모든 완료된 setup + myAssetPage
+  }
+
+  // ---------------------
   // Render switch
   // ---------------------
   switch (currentPage) {
-    case 'selectAssets':
+    case 'selectAssets': {
+      const { totalSteps } = getSetupProgress()
       return (
         <SetupSelectAssets
           onNext={handleSelectAssetsNext}
@@ -399,14 +430,19 @@ function App() {
           initialSelectedAssets={selectedAssets}
           assetData={assetData}
           onAssetDataDelete={handleAssetDataDelete}
+          currentStep={1}
+          totalSteps={totalSteps}
         />
       )
+    }
 
     case 'myAssetPage': {
       const hasUnfilledAssets = Array.from(selectedAssets).some(
         (assetType) => !assetData[assetType] || assetData[assetType].total === 0
       )
-  return (
+      const { totalSteps } = getSetupProgress()
+      const currentStep = getMyAssetPageCurrentStep()
+      return (
         <MyAssetPage
           selectedAssets={selectedAssets}
           assetData={assetData}
@@ -415,49 +451,71 @@ function App() {
           onGoToMain={handleGoToMain}
           onBack={handleMyAssetPageBack}
           hasUnfilledAssets={hasUnfilledAssets}
+          currentStep={currentStep}
+          totalSteps={totalSteps}
         />
       )
     }
 
-    case 'setupSavings':
+    case 'setupSavings': {
+      const { totalSteps } = getSetupProgress()
+      const currentStep = getSetupCurrentStep('savings')
       return (
         <SetupSavings
           initialValue={assetData.savings}
           onComplete={(d) => handleSetupComplete('savings', d)}
           onBack={() => handleSetupBack('savings')}
           onDataChange={(d) => handleAssetDataChange('savings', d)}
+          currentStep={currentStep}
+          totalSteps={totalSteps}
         />
       )
+    }
 
-    case 'setupInvestment':
+    case 'setupInvestment': {
+      const { totalSteps } = getSetupProgress()
+      const currentStep = getSetupCurrentStep('investment')
       return (
         <SetupInvestment
           initialValue={assetData.investment}
           onComplete={(d) => handleSetupComplete('investment', d)}
           onBack={() => handleSetupBack('investment')}
           onDataChange={(d) => handleAssetDataChange('investment', d)}
+          currentStep={currentStep}
+          totalSteps={totalSteps}
         />
       )
+    }
 
-    case 'setupRealAssets':
+    case 'setupRealAssets': {
+      const { totalSteps } = getSetupProgress()
+      const currentStep = getSetupCurrentStep('tangible')
       return (
         <SetupRealAssets
           initialValue={assetData.tangible}
           onComplete={(d) => handleSetupComplete('tangible', d)}
           onBack={() => handleSetupBack('tangible')}
           onDataChange={(d) => handleAssetDataChange('tangible', d)}
+          currentStep={currentStep}
+          totalSteps={totalSteps}
         />
       )
+    }
 
-    case 'setupDebt':
-      return (
+    case 'setupDebt': {
+      const { totalSteps } = getSetupProgress()
+      const currentStep = getSetupCurrentStep('debt')
+  return (
         <SetupDebt
           initialValue={assetData.debt}
           onComplete={(d) => handleSetupComplete('debt', d)}
           onBack={() => handleSetupBack('debt')}
           onDataChange={(d) => handleAssetDataChange('debt', d)}
+          currentStep={currentStep}
+          totalSteps={totalSteps}
         />
       )
+    }
 
     case 'assetDetail':
       return (
@@ -469,7 +527,7 @@ function App() {
       )
 
     case 'mainPage':
-      return <MainPage assetData={assetData} planState={planState} onPlanClick={() => setCurrentPage('planSetGoal')} />
+      return <MainPage assetData={assetData} planState={planState} onPlanClick={() => setCurrentPage('planSetGoal')} API={API} />
 
     case 'planSetGoal':
       return (
@@ -522,6 +580,17 @@ function App() {
           initialValue={planState.lifestyle}
           onNext={handlePlanLifestyleFinish}
           onBack={() => setCurrentPage('planTaxRate')}
+        />
+      )
+
+    case 'planPage':
+      return (
+        <PlanPage
+          planState={planState}
+          planId={planId}
+          API={API}
+          onEditPlan={() => setCurrentPage('planSetGoal')}
+          onBack={() => setCurrentPage('mainPage')}
         />
       )
 
@@ -800,11 +869,5 @@ async function submitPlanAll(API: string, planState: any) {
 
 
 
-export async function fetchPlanDetail(API: string, planId: number): Promise<PlanDetailResponse> {
-  const res = await fetch(`${API}/plans/${planId}/`, { method: 'GET' }) // 슬래시 통일 추천
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`GET /plans/${planId} failed (${res.status}) ${text}`)
-  }
-  return res.json()
-}
+// fetchPlanDetail은 utils/planApi.ts로 이동했습니다
+export { fetchPlanDetail } from './utils/planApi'

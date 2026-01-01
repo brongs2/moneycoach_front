@@ -16,9 +16,11 @@ interface SetupSavingsProps {
   onBack: () => void
   initialValue?: { items?: Array<{ category: string; amount: number }>; total?: number }
   onDataChange?: (data: any) => void
+  currentStep?: number
+  totalSteps?: number
 }
 
-const SetupSavings = ({ onComplete, onBack, initialValue, onDataChange }: SetupSavingsProps) => {
+const SetupSavings = ({ onComplete, onBack, initialValue, onDataChange, currentStep = 3, totalSteps = 4 }: SetupSavingsProps) => {
   const initialItems: SavingsItem[] =
     initialValue?.items && initialValue.items.length > 0
       ? initialValue.items.map((it, idx) => ({
@@ -120,7 +122,7 @@ const SetupSavings = ({ onComplete, onBack, initialValue, onDataChange }: SetupS
 
         <div className="setup-content-scrollable">
           <div className="setup-top">
-            <LoadingBar currentStep={3} totalSteps={4} />
+            <LoadingBar currentStep={currentStep} totalSteps={totalSteps} />
             <div className="setup-title">
               <h1 className="title-main">어떤 방식으로<br />저축하고 있나요?</h1>
               <p className="title-subtitle">일반예금, 적금, 청약 등 저축하고 있는 내용들을<br />모두 써주세요.</p>

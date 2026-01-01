@@ -14,6 +14,8 @@ interface SetupSelectAssetsProps {
   initialSelectedAssets?: Set<string>
   assetData?: Record<string, { items: any[]; total: number }>
   onAssetDataDelete?: (category: string) => void
+  currentStep?: number
+  totalSteps?: number
 }
 
 const SetupSelectAssets = ({
@@ -22,6 +24,8 @@ const SetupSelectAssets = ({
   initialSelectedAssets,
   assetData = {},
   onAssetDataDelete,
+  currentStep = 1,
+  totalSteps = 4,
 }: SetupSelectAssetsProps) => {
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(
     initialSelectedAssets ?? new Set()
@@ -133,7 +137,7 @@ const SetupSelectAssets = ({
 
         <div className="setup-content">
           <div className="setup-top">
-            <LoadingBar currentStep={2} totalSteps={4} />
+            <LoadingBar currentStep={currentStep} totalSteps={totalSteps} invisible />
             <div className="setup-title">
               <h1 className="title-main">가지고 있는 자산 형태를 모두 선택해주세요</h1>
               <p className="title-subtitle">자산관리 성향 파악 및 계획 세우기에 도움이 됩니다</p>

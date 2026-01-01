@@ -21,9 +21,11 @@ interface SetupRealAssetsProps {
   onBack: () => void
   initialValue?: { items?: any[]; total?: number }
   onDataChange?: (data: any) => void
+  currentStep?: number
+  totalSteps?: number
 }
 
-const SetupRealAssets = ({ onComplete, onBack, initialValue, onDataChange }: SetupRealAssetsProps) => {
+const SetupRealAssets = ({ onComplete, onBack, initialValue, onDataChange, currentStep = 3, totalSteps = 4 }: SetupRealAssetsProps) => {
   const hydrate = (rawItems?: any[]): { completed: RealAssetItem[]; current: RealAssetItem } => {
     const base: RealAssetItem = {
       id: 'current',
@@ -194,7 +196,7 @@ const SetupRealAssets = ({ onComplete, onBack, initialValue, onDataChange }: Set
 
         <div className="setup-content-scrollable">
           <div className="setup-top">
-            <LoadingBar currentStep={3} totalSteps={4} />
+            <LoadingBar currentStep={currentStep} totalSteps={totalSteps} />
             <div className="setup-title">
               <h1 className="title-main">어떤 유형자산을<br />가지고 있나요?</h1>
               <p className="title-subtitle">집, 오피스텔 등 형태가 있는 자산을<br />모두 써주세요.</p>

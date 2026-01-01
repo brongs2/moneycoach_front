@@ -17,5 +17,5 @@
   background-color: var(--moneyblue, #4068ff);
   height: 4px;
   border-radius: 10px;
-  transition: width 0.3s ease;
+  transition: width 0.5s ease-out;
 }

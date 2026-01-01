@@ -20,9 +20,11 @@ interface SetupDebtProps {
   onBack: () => void
   initialValue?: { items?: any[]; total?: number }
   onDataChange?: (data: any) => void
+  currentStep?: number
+  totalSteps?: number
 }
 
-const SetupDebt = ({ onComplete, onBack, initialValue, onDataChange }: SetupDebtProps) => {
+const SetupDebt = ({ onComplete, onBack, initialValue, onDataChange, currentStep = 3, totalSteps = 4 }: SetupDebtProps) => {
   const hydrate = (rawItems?: any[]): { completed: DebtItem[]; current: DebtItem } => {
     const base: DebtItem = {
       id: 'current',
@@ -184,7 +186,7 @@ const SetupDebt = ({ onComplete, onBack, initialValue, onDataChange }: SetupDebt
 
         <div className="setup-content-scrollable">
           <div className="setup-top">
-            <LoadingBar currentStep={3} totalSteps={4} />
+            <LoadingBar currentStep={currentStep} totalSteps={totalSteps} />
             <div className="setup-title">
               <h1 className="title-main">어떤 부채를<br />가지고 있나요?</h1>
               <p className="title-subtitle">학자금 대출, 신용 대출 등 부채를<br />모두 써주세요.</p>

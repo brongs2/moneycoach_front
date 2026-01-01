@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import StatusBar from '../components/StatusBar'
+import LoadingBar from '../components/LoadingBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import NavigationBar from '../components/NavigationBar'
 import { SavingsIcon, InvestmentIcon, TangibleAssetIcon, DebtIcon } from '../components/AssetIcons'
@@ -13,6 +14,8 @@ interface MyAssetPageProps {
   onGoToMain: () => void
   onBack?: () => void
   hasUnfilledAssets?: boolean
+  currentStep?: number
+  totalSteps?: number
 }
 
 const assetCategoryMap: Record<string, { title: string; description: string; icon: React.ReactNode }> = {
@@ -22,7 +25,7 @@ const assetCategoryMap: Record<string, { title: string; description: string; ico
   debt: { title: '부채', description: '학자금 대출, 신용 대출 등 부채', icon: <DebtIcon selected={false} /> },
 }
 
-const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, onGoToMain, onBack, hasUnfilledAssets }: MyAssetPageProps) => {
+const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, onGoToMain, onBack, hasUnfilledAssets, currentStep = 5, totalSteps = 5 }: MyAssetPageProps) => {
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
 
   // 총 자산 계산
@@ -68,6 +71,10 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
+        </div>
+
+        <div className="setup-top-my-asset">
+          <LoadingBar currentStep={currentStep} totalSteps={totalSteps} invisible />
         </div>
 
         {/* 위쪽: 나의 자산 (파란색 부분) */}
