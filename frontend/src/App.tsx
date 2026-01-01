@@ -78,7 +78,14 @@ function App() {
 
   // 최초 로드
   useEffect(() => {
-    loadAll(API, setAssetData, setSelectedAssets).catch(console.error)
+    (async () => {
+      try {
+        await ensureToken(API)
+        await loadAll(API, setAssetData, setSelectedAssets)
+      } catch (e) {
+        console.error(e)
+      }
+    })()
   }, [])
 
   // ---------------------
@@ -241,7 +248,7 @@ function App() {
           birth,
           gender: genderMap[personalInfo.gender] ?? personalInfo.gender ?? null,
           purpose: personalInfo.purpose || '',
-        })
+        }, API)
       }
 
       // // 자산 bulk 전송(필요한 것만)
@@ -609,26 +616,51 @@ export default App
 // Helpers (App 밖으로 분리)
 // =====================
 
-async function fetchJson(url: string) {
-  const res = await fetch(url, { method: 'GET' })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`GET failed ${url} (${res.status}) ${text}`)
+const TOKEN_KEY = "mc_token";
+
+async function ensureToken(API: string): Promise<string> {
+  let token = sessionStorage.getItem(TOKEN_KEY);
+
+  if (!token) {
+    const res = await fetch(`${API}/auth/anon`, { method: "POST" });
+    if (!res.ok) throw new Error(`anon failed: ${res.status}`);
+
+    const data = await res.json();
+    token = data.access_token as string;
+    sessionStorage.setItem(TOKEN_KEY, token);
   }
-  return res.json()
+
+  return token; // 여기선 string으로 확정됨
 }
 
-async function postJson(url: string, payload: any) {
+
+async function fetchJson(url: string, API: string) {
+  const token = await ensureToken(API);
+
   const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`POST failed ${url} (${res.status}) ${text}`)
-  }
-  return res.json()
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error(`GET failed: ${res.status}`);
+  return res.json();
+}
+
+async function postJson(url: string, body: any, API: string) {
+  const token = await ensureToken(API);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) throw new Error(`POST failed: ${res.status}`);
+  return res.json();
 }
 
 async function loadAll(
@@ -637,10 +669,10 @@ async function loadAll(
   setSelectedAssets: (v: Set<string> | ((prev: Set<string>) => Set<string>)) => void
 ) {
   const [savingsRows, investmentRows, assetRows, debtRows] = await Promise.all([
-    fetchJson(`${API}/savings/`),
-    fetchJson(`${API}/investments/`),
-    fetchJson(`${API}/assets/`),
-    fetchJson(`${API}/debts/`),
+    fetchJson(`${API}/savings/`, API),
+    fetchJson(`${API}/investments/`, API),
+    fetchJson(`${API}/assets/`, API),
+    fetchJson(`${API}/debts/`, API),
   ])
 
   const savingsLabelMap: Record<string, string> = {
@@ -726,7 +758,7 @@ async function saveAssetByType(API: string, assetType: string, data: any) {
         .map((it: any) => ({ category: map[it.category] ?? it.category, amount: Number(it.amount ?? 0) }))
         .filter((x: any) => x.amount > 0),
     }
-    await postJson(`${API}/savings/bulk`, payload)
+    await postJson(`${API}/savings/bulk`, payload, API)
     return
   }
 
@@ -737,7 +769,7 @@ async function saveAssetByType(API: string, assetType: string, data: any) {
         .map((it: any) => ({ category: map[it.category] ?? it.category, amount: Number(it.amount ?? 0) }))
         .filter((x: any) => x.amount > 0),
     }
-    await postJson(`${API}/investments/bulk`, payload)
+    await postJson(`${API}/investments/bulk`, payload, API)
     return
   }
 
@@ -752,7 +784,7 @@ async function saveAssetByType(API: string, assetType: string, data: any) {
         repay_amount: Number(it.monthlyPayment ?? it.repay_amount ?? 0),
       })),
     }
-    await postJson(`${API}/assets/bulk`, payload)
+    await postJson(`${API}/assets/bulk`, payload, API)
     return
   }
 
@@ -774,7 +806,7 @@ async function saveAssetByType(API: string, assetType: string, data: any) {
         }))
         .filter((x: any) => Number(x.loan_amount) > 0),
     }
-    await postJson(`${API}/debts/bulk`, payload)
+    await postJson(`${API}/debts/bulk`, payload, API)
     return
   }
 
@@ -854,7 +886,7 @@ function buildTaxBodies(planId: number, planState: any) {
 }
 
 async function submitPlanAll(API: string, planState: any) {
-  const created = await postJson(`${API}/plans/`, buildPlanBody(planState))
+  const created = await postJson(`${API}/plans/`, buildPlanBody(planState), API)
   const planId = created.plan_id ?? created.id
   if (!planId) throw new Error('plan_id not found in /plans response')
 
@@ -863,9 +895,9 @@ async function submitPlanAll(API: string, planState: any) {
   const taxes = buildTaxBodies(planId, planState)
   console.log(taxes)
   await Promise.all([
-    ...revenues.map((body) => postJson(`${API}/plans/${planId}/revenues`, body)),
-    ...expenses.map((body) => postJson(`${API}/plans/${planId}/expenses`, body)),
-    ...taxes.map((body) => postJson(`${API}/plans/${planId}/taxes`, body)),
+    ...revenues.map((body) => postJson(`${API}/plans/${planId}/revenues`, body, API)),
+    ...expenses.map((body) => postJson(`${API}/plans/${planId}/expenses`, body, API)),
+    ...taxes.map((body) => postJson(`${API}/plans/${planId}/taxes`, body, API)),
   ])
 
   return { planId }

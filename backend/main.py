@@ -12,7 +12,7 @@ import asyncpg
 from backend.db import get_db_connection
 from backend.auth import get_current_user, CurrentUser
 from backend.snapshot import load_user_snapshot
-from backend.routes import savings, investments, assets, debts, plans, users
+from backend.routes import savings, investments, assets, debts, plans, users, auth
 # from backend.mcp_client import mcp_client  # MCP 구현 시 사용
 
 # ==============================
@@ -49,7 +49,7 @@ app.include_router(investments.router, prefix="/api", tags=["investments"])
 app.include_router(assets.router, prefix="/api", tags=["assets"])
 app.include_router(debts.router, prefix="/api", tags=["debts"])
 app.include_router(plans.router, prefix="/api", tags=["plans"])
-
+app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(users.router, prefix="/api")
 # ==============================
 # Figma MCP 관련 스키마
@@ -109,7 +109,9 @@ async def get_figma_design_context(nodeId: Optional[str] = None):
         "message": "MCP 통합 필요",
         "nodeId": nodeId
     }
-
+@app.get("/api/debug/whoami")
+async def whoami(current_user: CurrentUser = Depends(get_current_user)):
+    return {"user_id": current_user.id}
 # ==============================
 # 대시보드 (HTML)
 # ==============================
