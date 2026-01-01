@@ -73,9 +73,12 @@ const SetupSavings = ({ onComplete, onBack, initialValue, onDataChange, currentS
   }
 
   const handleNext = () => {
+    console.log('SetupSavings handleNext called', items)
     const total = items.reduce((sum, item) => sum + item.amount, 0)
+    const filteredItems = items.filter(item => item.amount > 0)
+    console.log('SetupSavings handleNext calling onComplete', { items: filteredItems, total })
     onComplete({
-      items: items.filter(item => item.amount > 0),
+      items: filteredItems,
       total,
     })
   }

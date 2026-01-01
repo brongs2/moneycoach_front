@@ -180,6 +180,7 @@ function App() {
   }
 
   const handleSetupComplete = async (assetType: string, data: any) => {
+    console.log('handleSetupComplete called', { assetType, data })
     // 0) 로컬 상태 우선 반영 (백엔드 실패 시에도 루프 방지)
     const items = data?.items ?? []
     const total =
@@ -198,7 +199,10 @@ function App() {
       .slice(currentIndex + 1)
       .find((a) => selectedAssets.has(a) && (!updatedAssetData[a] || updatedAssetData[a].total === 0))
 
+    console.log('handleSetupComplete nextAsset', { currentIndex, selectedAssets: Array.from(selectedAssets), updatedAssetData, nextAsset })
+
     const goTo = (page: Page) => {
+      console.log('handleSetupComplete goTo', page)
       setCurrentPage(page)
       if (page === 'setupSavings' || page === 'setupInvestment' || page === 'setupRealAssets' || page === 'setupDebt') {
         setLastSetupPage(page)

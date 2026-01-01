@@ -20,7 +20,7 @@ interface SetupInvestmentProps {
   totalSteps?: number
 }
 
-const SetupInvestment = ({ onComplete, onBack, initialValue, onDataChange }: SetupInvestmentProps) => {
+const SetupInvestment = ({ onComplete, onBack, initialValue, onDataChange, currentStep = 3, totalSteps = 4 }: SetupInvestmentProps) => {
   const initialItems: InvestmentItem[] =
     initialValue?.items && initialValue.items.length > 0
       ? initialValue.items.map((it, idx) => ({
