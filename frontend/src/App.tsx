@@ -73,6 +73,7 @@ function App() {
   const [assetData, setAssetData] = useState<Record<string, any>>({})
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<string | null>(null)
   const [lastSetupPage, setLastSetupPage] = useState<Page | null>(null)
+  const [hasVisitedMyAssetPage, setHasVisitedMyAssetPage] = useState(false)
 
   const [planState, setPlanState] = useState<PlanState>({})
   const [planId, setPlanId] = useState<number | undefined>(undefined)
@@ -88,6 +89,22 @@ function App() {
       }
     })()
   }, [])
+
+  // MyAssetPage 한 번 방문 후에는 미입력 자산을 0으로 기본 세팅
+  useEffect(() => {
+    if (!hasVisitedMyAssetPage) return
+    setAssetData((prev) => {
+      let changed = false
+      const next: Record<string, any> = { ...prev }
+      ;['savings', 'investment', 'tangible', 'debt'].forEach((assetType) => {
+        if (selectedAssets.has(assetType) && !next[assetType]) {
+          next[assetType] = { items: [], total: 0 }
+          changed = true
+        }
+      })
+      return changed ? next : prev
+    })
+  }, [hasVisitedMyAssetPage, selectedAssets])
 
   // ---------------------
   // Setup Flow handlers
@@ -126,6 +143,7 @@ function App() {
   }
 
   const handleMyAssetPageInput = () => {
+    setHasVisitedMyAssetPage(true)
     const assetOrder = ['savings', 'investment', 'tangible', 'debt']
     const nextAssetToInput = assetOrder.find(
       (asset) => selectedAssets.has(asset) && (!assetData[asset] || assetData[asset].total === 0)
@@ -239,6 +257,7 @@ function App() {
   }
 
   const handleGoToMain = async () => {
+    setHasVisitedMyAssetPage(true)
     // ✅ 여기서는 기존 너의 자산/개인정보 저장 로직 유지
     try {
       if (personalInfo) {
@@ -449,9 +468,11 @@ function App() {
     }
 
     case 'myAssetPage': {
-      const hasUnfilledAssets = Array.from(selectedAssets).some(
-        (assetType) => !assetData[assetType] || assetData[assetType].total === 0
+      // 첫 사이클은 값이 없거나 0이면 미입력으로 간주, 이후(hasVisitedMyAssetPage)에는 항상 통과
+      const hasUnfilledBeforeVisit = Array.from(selectedAssets).some(
+        (assetType) => !assetData[assetType] || (assetData[assetType].total ?? 0) === 0
       )
+      const hasUnfilledAssets = hasVisitedMyAssetPage ? false : hasUnfilledBeforeVisit
       const { totalSteps } = getSetupProgress()
       const currentStep = getMyAssetPageCurrentStep()
       return (
@@ -463,6 +484,7 @@ function App() {
           onGoToMain={handleGoToMain}
           onBack={handleMyAssetPageBack}
           hasUnfilledAssets={hasUnfilledAssets}
+          hasVisitedMyAssetPage={hasVisitedMyAssetPage}
           currentStep={currentStep}
           totalSteps={totalSteps}
         />
@@ -883,9 +905,9 @@ async function submitPlanAll(API: string, planState: any) {
   const taxes = buildTaxBodies(planId, planState)
   console.log(taxes)
   await Promise.all([
-    ...revenues.map((body) => postJson(`${API}/plans/${planId}/revenues`, body, API)),
-    ...expenses.map((body) => postJson(`${API}/plans/${planId}/expenses`, body, API)),
-    ...taxes.map((body) => postJson(`${API}/plans/${planId}/taxes`, body, API)),
+    ...revenues.map((body: any) => postJson(`${API}/plans/${planId}/revenues`, body, API)),
+    ...expenses.map((body: any) => postJson(`${API}/plans/${planId}/expenses`, body, API)),
+    ...taxes.map((body: any) => postJson(`${API}/plans/${planId}/taxes`, body, API)),
   ])
 
   return { planId }

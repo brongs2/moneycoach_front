@@ -14,6 +14,7 @@ interface MyAssetPageProps {
   onGoToMain: () => void
   onBack?: () => void
   hasUnfilledAssets?: boolean
+  hasVisitedMyAssetPage?: boolean
   currentStep?: number
   totalSteps?: number
 }
@@ -25,15 +26,20 @@ const assetCategoryMap: Record<string, { title: string; description: string; ico
   debt: { title: '부채', description: '학자금 대출, 신용 대출 등 부채', icon: <DebtIcon selected={false} /> },
 }
 
-const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, onGoToMain, onBack, hasUnfilledAssets, currentStep = 5, totalSteps = 5 }: MyAssetPageProps) => {
+const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, onGoToMain, onBack, hasUnfilledAssets, hasVisitedMyAssetPage = false, currentStep = 5, totalSteps = 5 }: MyAssetPageProps) => {
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
 
-  // 총 자산 계산
-  const totalAssets = Object.values(assetData).reduce((sum: number, data: any) => {
-    return sum + (data?.total || 0)
+  // 총 자산 계산 (debt는 음수로 처리)
+  const totalAssets = Object.entries(assetData).reduce((sum: number, [key, data]: [string, any]) => {
+    const value = data?.total || 0
+    if (key === 'debt') {
+      return sum - value // debt는 음수로 계산
+    }
+    return sum + value
   }, 0)
 
   // 원형 그래프 데이터 (값 있는 항목만, 고정된 순서)
+  // 원형 그래프는 실제 값으로 표시하되, 비율 계산은 절대값 합으로
   const allPieData = (['savings', 'investment', 'tangible', 'debt'] as const)
     .filter(assetType => selectedAssets.has(assetType))
     .map(assetType => {
@@ -46,13 +52,17 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
     })
     .filter(item => item.value > 0)
   
+  // 원형 그래프 비율 계산용 총합 (절대값 합)
+  const totalForChart = allPieData.reduce((sum, item) => sum + item.value, 0) || 1
+  
   // 부채를 제외한 자산과 부채를 분리
   const nonDebtPieData = allPieData.filter(item => item.type !== 'debt')
   const debtPieData = allPieData.find(item => item.type === 'debt')
   const pieData = debtPieData ? [...nonDebtPieData, debtPieData] : nonDebtPieData
 
-  const formatCurrency = (amount: number) => {
-    if (amount === 0) return '??? 원'
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined || amount === null) return '??? 원'
+    if (amount === 0) return '0원'
     if (amount >= 10000) {
       return `${(amount / 10000).toFixed(1)}억 원`
     }
@@ -111,7 +121,7 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
                   
                   // 부채를 제외한 자산들을 먼저 그리기
                   nonDebtPieData.forEach((item) => {
-                    const percentage = totalAssets > 0 ? (item.value / totalAssets) * 100 : 0
+                    const percentage = totalForChart > 0 ? (item.value / totalForChart) * 100 : 0
                     if (percentage === 0) return
                     
                     const angle = (percentage / 100) * 360
@@ -143,7 +153,7 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
                   
                   // 마지막에 부채를 그리기
                   if (debtPieData) {
-                    const percentage = totalAssets > 0 ? (debtPieData.value / totalAssets) * 100 : 0
+                    const percentage = totalForChart > 0 ? (debtPieData.value / totalForChart) * 100 : 0
                     if (percentage > 0) {
                       const angle = (percentage / 100) * 360
                       const startAngle = currentAngle
@@ -203,7 +213,7 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
                       <p className="asset-description">{category.description}</p>
                     </div>
                     <div className="asset-value">
-                      {formatCurrency(data.total || 0)}
+                      {formatCurrency(data.total)}
                     </div>
                   </div>
                 )
@@ -213,7 +223,13 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
 
         {/* 버튼: 지정된 위치에 고정 */}
         <div className="my-asset-bottom">
-          {hasUnfilledAssets ? (
+          {hasVisitedMyAssetPage ? (
+            <ContentBlueButton 
+              label="메인 화면으로 가기" 
+              onClick={onGoToMain}
+              style={{ width: '284px' }}
+            />
+          ) : hasUnfilledAssets ? (
             <ContentBlueButton 
               label="자산 입력하러 가기" 
               onClick={onInputClick}

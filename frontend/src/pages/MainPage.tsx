@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { PlanState, PlanDetailResponse } from '../types/plan'
 import { fetchPlanDetail } from '../utils/planApi'
 import StatusBar from '../components/StatusBar'
@@ -18,6 +18,8 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
   const [planDetail, setPlanDetail] = useState<PlanDetailResponse | null>(null)
   const [planLoading, setPlanLoading] = useState(false)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+  const [chartInnerWidth, setChartInnerWidth] = useState(0)
 
   // plan id 5 데이터 로드
   useEffect(() => {
@@ -35,10 +37,37 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
     loadPlanDetail()
   }, [API])
 
-  // 총 자산 계산
-  const totalAssets = Object.values(assetData).reduce((sum: number, data: any) => {
-    return sum + (data?.total || 0)
+  // 차트 플레이스홀더 너비 측정
+  useEffect(() => {
+    const updateWidth = () => {
+      if (chartContainerRef.current) {
+        setChartInnerWidth(chartContainerRef.current.offsetWidth)
+      }
+    }
+
+    updateWidth()
+
+    const resizeObserver = new ResizeObserver(updateWidth)
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current)
+    }
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  // 총 자산 계산 (debt는 음수로 처리)
+  const totalAssets = Object.entries(assetData).reduce((sum: number, [key, data]: [string, any]) => {
+    const value = data?.total || 0
+    if (key === 'debt') {
+      return sum - value // debt는 음수로 계산
+    }
+    return sum + value
   }, 0)
+
+  // debt를 제외한 총 자산 (그래프 레이블용)
+  const totalAssetsWithoutDebt = Object.entries(assetData)
+    .filter(([key]) => key !== 'debt')
+    .reduce((sum: number, [, data]: [string, any]) => sum + (data?.total || 0), 0)
 
   // 자산별 데이터 준비 (debt를 마지막에 배치하여 오른쪽 아래에 위치하도록)
   const assetBreakdown = [
@@ -253,37 +282,48 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
 
         <div className="main-chart">
           <div className="chart-container">
-            <div className="chart-placeholder">
+            <div className="chart-placeholder" ref={chartContainerRef}>
               {planLoading ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
               ) : (
                 <>
-                  <div className="chart-bars">
-                    {chartData.bars.map((height, index) => (
-                      <div key={index} className="chart-bar" style={{ height: `${height}px` }} />
-                    ))}
-                  </div>
-                  {planDetail && planDetail.labels && planDetail.labels.length > 0 && chartData.bars.length > 0 && (
-                    <>
-                      <div className="chart-line" style={{
-                        left: `${85 + (chartData.currentIndex / chartData.bars.length) * (345 - 85)}px`
-                      }} />
-                      <div className="chart-point" style={{ 
-                        left: `${85 + (chartData.currentIndex / chartData.bars.length) * (345 - 85)}px`,
-                        top: `${73 + (129 - chartData.bars[chartData.currentIndex])}px`
-                      }}>
-                        <div className="chart-point-outer" />
-                        <div className="chart-point-middle" />
-                        <div className="chart-point-inner" />
-                      </div>
-                    </>
-                  )}
-                  <div className="chart-label">
-                    {chartData.currentValue >= 10000 
-                      ? `${(chartData.currentValue / 10000).toFixed(1)}억`
-                      : `${chartData.currentValue.toFixed(0)}만`
-                    }
-                  </div>
+                  {chartInnerWidth > 0 && (() => {
+                    const oneThirdPosition = chartInnerWidth / 3
+                    const chartHeight = 129
+                    const currentAssetInManWon = totalAssets / 10000
+                    const maxValue = planDetail && chartData.maxValue > 0 
+                      ? chartData.maxValue 
+                      : Math.max(currentAssetInManWon, 100)
+                    const currentAssetHeight = Math.max(56, (currentAssetInManWon / maxValue) * chartHeight)
+                    
+                    // debt 제외한 총 자산 (이미 만원 단위)
+                    const totalWithoutDebtInManWon = totalAssetsWithoutDebt
+                    const pointTop = 73 + (chartHeight - currentAssetHeight)
+                    const pointCenterX = oneThirdPosition
+                    const pointCenterY = pointTop + 6 // 점의 중심 (점 높이 12px의 절반)
+                    const labelLeft = pointCenterX - 48
+                    const labelTop = pointCenterY - 16
+                    
+                    return (
+                      <>
+                        <div className="chart-line" style={{ left: `${oneThirdPosition}px` }} />
+                        <div className="chart-point" style={{ 
+                          left: `${oneThirdPosition - 6}px`,
+                          top: `${pointTop}px`
+                        }}>
+                          <div className="chart-point-outer" />
+                          <div className="chart-point-middle" />
+                          <div className="chart-point-inner" />
+                        </div>
+                        <div className="chart-label" style={{ left: `${labelLeft}px`, top: `${labelTop}px` }}>
+                          {totalWithoutDebtInManWon >= 10000 
+                            ? `${(totalWithoutDebtInManWon / 10000).toFixed(1)}억`
+                            : `${totalWithoutDebtInManWon.toFixed(0)}만`
+                          }
+                        </div>
+                      </>
+                    )
+                  })()}
                   {planDetail ? (
                     <div className="chart-callout">
                       <p>계획을 세우고</p>
