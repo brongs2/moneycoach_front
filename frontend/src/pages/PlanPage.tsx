@@ -3,6 +3,7 @@ import type { PlanState, PlanDetailResponse } from '../types/plan'
 import { fetchPlanDetail } from '../utils/planApi'
 import StatusBar from '../components/StatusBar'
 import NavigationBar from '../components/NavigationBar'
+import PlanLineChart from '../components/PlanLineChart'
 import { SavingsIcon, InvestmentIcon, TangibleAssetIcon, DebtIcon } from '../components/AssetIcons'
 import './PlanPage.css'
 
@@ -37,40 +38,22 @@ const PlanPage = ({ planState, planId, API = '/api', onEditPlan, onBack }: PlanP
     loadPlanDetail()
   }, [API, planId])
 
-  // 그래프 데이터 계산
-  const getChartData = () => {
-    if (!planDetail || !planDetail.labels || planDetail.labels.length === 0 || !planDetail.net_worth || planDetail.net_worth.length === 0) {
-      return {
-        bars: [56, 77, 109, 129, 120, 109, 56, 56, 56, 56, 56, 56],
-        currentValue: 0,
-        maxValue: 129,
-        currentIndex: 4,
-      }
-    }
-
-    const labels = planDetail.labels
-    const netWorthArray = Array.isArray(planDetail.net_worth) ? planDetail.net_worth : [planDetail.net_worth]
-    
-    const netWorthInManWon = netWorthArray.map(w => w / 10000)
-    const maxNetWorth = Math.max(...netWorthInManWon, 100)
-    const chartHeight = 129
-    
-    const bars = netWorthInManWon.map(value => {
-      return Math.max(56, (value / maxNetWorth) * chartHeight)
-    })
-
-    const currentIndex = netWorthInManWon.length - 1
-    const currentValue = netWorthInManWon[currentIndex] || 0
-
-    return {
-      bars,
-      currentValue,
-      maxValue: maxNetWorth,
-      currentIndex,
-    }
-  }
-
-  const chartData = getChartData()
+  const chartLabels = planDetail?.labels || []
+  const chartValues = (() => {
+    if (!planDetail || !planDetail.labels) return []
+    const netWorthArray = Array.isArray(planDetail.net_worth) ? planDetail.net_worth : (planDetail?.net_worth !== undefined ? [planDetail.net_worth] : [])
+    const totalAssetsArray = Array.isArray(planDetail?.total_assets) ? planDetail.total_assets : []
+    const source =
+      netWorthArray.length > 0 && netWorthArray.some((v) => v !== 0)
+        ? netWorthArray
+        : totalAssetsArray.length > 0
+          ? totalAssetsArray
+          : netWorthArray
+    const len = Math.min(planDetail.labels.length, source.length)
+    return source.slice(0, len).map((v) => v / 10000) // 만원 단위
+  })()
+  const retirementYear = planDetail?.retirement_year ?? planDetail?.plan?.retirement_year
+  const expectedDeathYear = planDetail?.expected_death_year ?? planDetail?.plan?.expected_death_year
 
   // 플랜 설명 텍스트 생성
   const getPlanDescription = () => {
@@ -122,34 +105,21 @@ const PlanPage = ({ planState, planId, API = '/api', onEditPlan, onBack }: PlanP
                 {planLoading ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
                 ) : (
-                  <>
-                    <div className="plan-chart-bars">
-                      {chartData.bars.map((height, index) => (
-                        <div key={index} className="plan-chart-bar" style={{ height: `${height}px` }} />
-                      ))}
-                    </div>
-                    {planDetail && planDetail.labels && planDetail.labels.length > 0 && chartData.bars.length > 0 && (
-                      <>
-                        <div className="plan-chart-line" style={{
-                          left: `${85 + (chartData.currentIndex / chartData.bars.length) * (345 - 85)}px`
-                        }} />
-                        <div className="plan-chart-point" style={{ 
-                          left: `${85 + (chartData.currentIndex / chartData.bars.length) * (345 - 85)}px`,
-                          top: `${73 + (129 - chartData.bars[chartData.currentIndex])}px`
-                        }}>
-                          <div className="plan-chart-point-outer" />
-                          <div className="plan-chart-point-middle" />
-                          <div className="plan-chart-point-inner" />
-                        </div>
-                      </>
-                    )}
-                    <div className="plan-chart-label">
-                      {chartData.currentValue >= 10000 
-                        ? `${(chartData.currentValue / 10000).toFixed(1)}억`
-                        : `${chartData.currentValue.toFixed(0)}만`
-                      }
-                    </div>
-                  </>
+                  <PlanLineChart
+                    labels={chartLabels}
+                    values={chartValues}
+                    retirementYear={retirementYear}
+                    expectedDeathYear={expectedDeathYear}
+                    height={200}
+                    paddingX={24}
+                    paddingY={24}
+                    placeholder={
+                      <div className="plan-chart-empty">
+                        <p>계획을 세우고</p>
+                        <p>미래를 확인해보세요!</p>
+                      </div>
+                    }
+                  />
                 )}
               </div>
             </div>

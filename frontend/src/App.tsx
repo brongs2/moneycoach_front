@@ -561,8 +561,15 @@ function App() {
       )
 
     case 'mainPage':
-      return <MainPage assetData={assetData} planState={planState} onPlanClick={() => setCurrentPage('planSetGoal')} API={API} />
-
+      return (
+        <MainPage
+          assetData={assetData}
+          planState={planState}
+          planId={planId}
+          onPlanClick={() => setCurrentPage('planSetGoal')}
+          API={API}
+        />
+      )
     case 'planSetGoal':
       return (
         <PlanSetGoal

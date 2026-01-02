@@ -4,17 +4,19 @@ import { fetchPlanDetail } from '../utils/planApi'
 import StatusBar from '../components/StatusBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import NavigationBar from '../components/NavigationBar'
+import PlanLineChart from '../components/PlanLineChart'
 import { SavingsIcon, InvestmentIcon, TangibleAssetIcon, DebtIcon } from '../components/AssetIcons'
 import './MainPage.css'
 
 interface MainPageProps {
   assetData: Record<string, any>
   planState?: PlanState
+  planId?: number
   onPlanClick?: () => void
   API?: string
 }
 
-const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageProps) => {
+const MainPage = ({ assetData, planState, planId, onPlanClick, API = '/api' }: MainPageProps) => {  
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
   const [planDetail, setPlanDetail] = useState<PlanDetailResponse | null>(null)
   const [planLoading, setPlanLoading] = useState(false)
@@ -23,10 +25,15 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
 
   // plan id 5 데이터 로드
   useEffect(() => {
+    if (!planId) {
+      setPlanDetail(null)
+      return
+    }
+  
     const loadPlanDetail = async () => {
       try {
         setPlanLoading(true)
-        const data = await fetchPlanDetail(API, 5)
+        const data = await fetchPlanDetail(API, planId)
         setPlanDetail(data)
       } catch (error) {
         console.error('Plan detail 로드 실패:', error)
@@ -34,26 +41,9 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
         setPlanLoading(false)
       }
     }
+  
     loadPlanDetail()
-  }, [API])
-
-  // 차트 플레이스홀더 너비 측정
-  useEffect(() => {
-    const updateWidth = () => {
-      if (chartContainerRef.current) {
-        setChartInnerWidth(chartContainerRef.current.offsetWidth)
-      }
-    }
-
-    updateWidth()
-
-    const resizeObserver = new ResizeObserver(updateWidth)
-    if (chartContainerRef.current) {
-      resizeObserver.observe(chartContainerRef.current)
-    }
-
-    return () => resizeObserver.disconnect()
-  }, [])
+  }, [API, planId])
 
   // 총 자산 계산 (debt는 음수로 처리)
   const totalAssets = Object.entries(assetData).reduce((sum: number, [key, data]: [string, any]) => {
@@ -63,11 +53,22 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
     }
     return sum + value
   }, 0)
-
-  // debt를 제외한 총 자산 (그래프 레이블용)
   const totalAssetsWithoutDebt = Object.entries(assetData)
     .filter(([key]) => key !== 'debt')
     .reduce((sum: number, [, data]: [string, any]) => sum + (data?.total || 0), 0)
+
+  // 차트 컨테이너 폭 측정
+  useEffect(() => {
+    const updateWidth = () => {
+      if (chartContainerRef.current) {
+        setChartInnerWidth(chartContainerRef.current.offsetWidth)
+      }
+    }
+    updateWidth()
+    const ro = new ResizeObserver(updateWidth)
+    if (chartContainerRef.current) ro.observe(chartContainerRef.current)
+    return () => ro.disconnect()
+  }, [])
 
   // 자산별 데이터 준비 (debt를 마지막에 배치하여 오른쪽 아래에 위치하도록)
   const assetBreakdown = [
@@ -188,46 +189,23 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
     return `${amount}만원`
   }
 
-  // plan detail 그래프 데이터 계산
-  const getChartData = () => {
-    if (!planDetail || !planDetail.labels || planDetail.labels.length === 0 || !planDetail.net_worth || planDetail.net_worth.length === 0) {
-      // 데이터가 없으면 기본값 반환
-      return {
-        bars: [56, 77, 109, 129, 120, 109, 56, 56, 56, 56, 56, 56],
-        currentValue: 0,
-        maxValue: 129,
-        currentIndex: 4,
-      }
-    }
-
-    const labels = planDetail.labels
-    const netWorthArray = Array.isArray(planDetail.net_worth) ? planDetail.net_worth : [planDetail.net_worth]
-    
-    // net_worth 배열을 만원 단위로 변환
-    const netWorthInManWon = netWorthArray.map(w => w / 10000)
-    
-    // 최대값 계산
-    const maxNetWorth = Math.max(...netWorthInManWon, 100)
-    const chartHeight = 129 // CSS에서 정의된 높이
-    
-    // 각 라벨별 높이 계산 (실제 net_worth 값 사용)
-    const bars = netWorthInManWon.map(value => {
-      return Math.max(56, (value / maxNetWorth) * chartHeight)
-    })
-
-    // 현재값 인덱스 (마지막 값)
-    const currentIndex = netWorthInManWon.length - 1
-    const currentValue = netWorthInManWon[currentIndex] || 0
-
-    return {
-      bars,
-      currentValue,
-      maxValue: maxNetWorth,
-      currentIndex,
-    }
-  }
-
-  const chartData = getChartData()
+  const chartLabels = planDetail?.labels || []
+  const chartValues = (() => {
+    if (!planDetail || !planDetail.labels) return []
+    const netWorthArray = Array.isArray(planDetail.net_worth) ? planDetail.net_worth : (planDetail?.net_worth !== undefined ? [planDetail.net_worth] : [])
+    const totalAssetsArray = Array.isArray(planDetail?.total_assets) ? planDetail.total_assets : []
+    const source =
+      netWorthArray.length > 0 && netWorthArray.some((v) => v !== 0)
+        ? netWorthArray
+        : totalAssetsArray.length > 0
+          ? totalAssetsArray
+          : netWorthArray
+    const len = Math.min(planDetail.labels.length, source.length)
+    return source.slice(0, len).map((v) => v / 10000) // 만원 단위
+  })()
+  const retirementYear = planDetail?.retirement_year ?? planDetail?.plan?.retirement_year
+  const expectedDeathYear = planDetail?.expected_death_year ?? planDetail?.plan?.expected_death_year
+  const hasPlanData = chartValues.length > 0
 
   return (
     <div className="main-page">
@@ -281,29 +259,38 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
         </div>
 
         <div className="main-chart">
-          <div className="chart-container">
-            <div className="chart-placeholder" ref={chartContainerRef}>
+          <div className="chart-container" ref={chartContainerRef}>
+            <div className="chart-placeholder">
               {planLoading ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div>
+              ) : hasPlanData ? (
+                <PlanLineChart
+                  labels={chartLabels}
+                  values={chartValues}
+                  retirementYear={retirementYear}
+                  expectedDeathYear={expectedDeathYear}
+                  height={218}
+                  paddingX={24}
+                  paddingY={24}
+                  placeholder={
+                    <div className="chart-callout">
+                      <p>계획을 세우고</p>
+                      <p>미래를 확인해보세요!</p>
+                    </div>
+                  }
+                />
               ) : (
                 <>
                   {chartInnerWidth > 0 && (() => {
-                    const oneThirdPosition = chartInnerWidth / 3
                     const chartHeight = 129
                     const currentAssetInManWon = totalAssets / 10000
-                    const maxValue = planDetail && chartData.maxValue > 0 
-                      ? chartData.maxValue 
-                      : Math.max(currentAssetInManWon, 100)
+                    const maxValue = Math.max(currentAssetInManWon, 100)
                     const currentAssetHeight = Math.max(56, (currentAssetInManWon / maxValue) * chartHeight)
-                    
-                    // debt 제외한 총 자산 (이미 만원 단위)
-                    const totalWithoutDebtInManWon = totalAssetsWithoutDebt
                     const pointTop = 73 + (chartHeight - currentAssetHeight)
-                    const pointCenterX = oneThirdPosition
-                    const pointCenterY = pointTop + 6 // 점의 중심 (점 높이 12px의 절반)
-                    const labelLeft = pointCenterX - 48
-                    const labelTop = pointCenterY - 16
-                    
+                    const oneThirdPosition = chartInnerWidth / 3
+                    const labelLeft = oneThirdPosition - 48
+                    const labelTop = pointTop - 16
+                    const totalWithoutDebtInManWon = totalAssetsWithoutDebt
                     return (
                       <>
                         <div className="chart-line" style={{ left: `${oneThirdPosition}px` }} />
@@ -324,17 +311,10 @@ const MainPage = ({ assetData, planState, onPlanClick, API = '/api' }: MainPageP
                       </>
                     )
                   })()}
-                  {planDetail ? (
-                    <div className="chart-callout">
-                      <p>계획을 세우고</p>
-                      <p>미래를 확인해보세요!</p>
-                    </div>
-                  ) : (
-                    <div className="chart-callout">
-                      <p>계획을 세우고</p>
-                      <p>미래를 확인해보세요!</p>
-                    </div>
-                  )}
+                  <div className="chart-callout">
+                    <p>계획을 세우고</p>
+                    <p>미래를 확인해보세요!</p>
+                  </div>
                 </>
               )}
             </div>

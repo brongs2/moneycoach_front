@@ -136,4 +136,8 @@ export type PlanDetailResponse = {
 
   retirement_year: number
   expected_death_year: number
+  plan?: {
+    retirement_year?: number
+    expected_death_year?: number
+  }
 }
