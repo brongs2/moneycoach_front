@@ -1,5 +1,5 @@
 // App.tsx (정리본: plan submit + asset setup + page routing)
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import SetupPersonalInfo from './pages/SetupPersonalInfo'
 import SetupSelectAssets from './pages/SetupSelectAssets'
 import MyAssetPage from './pages/MyAssetPage'
@@ -19,8 +19,6 @@ import PlanPage from './pages/PlanPage'
 import './App.css'
 import { ensureToken } from './utils/auth'
 // api/plans.ts
-import type { PlanDetailResponse } from './types/plan'
-import { fetchPlanTitles } from './utils/planApi'
 
 import type {
   PlanState,
@@ -376,11 +374,6 @@ function App() {
     }
   }
 
-  // ---------------------
-  // Back handlers
-  // ---------------------
-  const handleBackFromSetup = () => setCurrentPage('myAssetPage')
-
   const handleMyAssetPageBack = () => {
     if (lastSetupPage) {
       setCurrentPage(lastSetupPage)
@@ -430,7 +423,16 @@ function App() {
     return 1 + completedCount + 1 // 1(selectAssets) + 모든 완료된 setup + myAssetPage
   }
 
- 
+  const handleNavigate = (target: 'home' | 'asset' | 'plan' | 'settings') => {
+    if (target === 'home') {
+      setCurrentPage('mainPage')
+    } else if (target === 'asset') {
+      setCurrentPage('myAssetPage')
+    } else if (target === 'plan') {
+      setCurrentPage(planId ? 'planPage' : 'planSetGoal')
+    }
+  }
+
   // ---------------------
   // Render switch
   // ---------------------
@@ -465,6 +467,8 @@ function App() {
           onGoToMain={handleGoToMain}
           onBack={handleMyAssetPageBack}
           hasUnfilledAssets={hasUnfilledAssets}
+          onNavigate={handleNavigate}
+          hasVisitedMyAssetPage={hasVisitedMyAssetPage}
           currentStep={currentStep}
           totalSteps={totalSteps}
         />
@@ -541,8 +545,15 @@ function App() {
       )
 
     case 'mainPage':
-      return <MainPage assetData={assetData} planState={planState} onPlanClick={() => setCurrentPage('planSetGoal')} API={API} />
-
+      return (
+        <MainPage
+          assetData={assetData}
+          planId={planId}
+          onPlanClick={() => setCurrentPage('planSetGoal')}
+          onNavigate={handleNavigate}
+          API={API}
+        />
+      )
     case 'planSetGoal':
       return (
         <PlanSetGoal
@@ -605,6 +616,7 @@ function App() {
           API={API}
           onEditPlan={() => setCurrentPage('planSetGoal')}
           onBack={() => setCurrentPage('mainPage')}
+          onNavigate={handleNavigate}
         />
       )
 
