@@ -20,3 +20,11 @@ export async function fetchPlanDetail(
 
   return res.json();
 }
+
+export async function fetchPlanTitles(API: string, token: string) {
+  const res = await fetch(`${API}/plans/titles`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<{ titles: string[] }>;
+}

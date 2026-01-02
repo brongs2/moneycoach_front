@@ -247,7 +247,7 @@ async def get_plan_details(
     )
     sim_result = run_simulation(snapshot, sim_req, start_date=date.today())
     summary = get_yearly_summary(sim_result)
-
+    
     response_data = {
         "request": request,
         "plan": plan,
@@ -272,14 +272,34 @@ async def get_plan_details(
         "retirement_year": plan["retirement_year"],
         "expected_death_year": plan["expected_death_year"],
     }
-
+    logger.info(response_data)
     if view == "html":
         return templates.TemplateResponse("plan_detail.html", response_data)
 
     response_data.pop("request")
     return response_data
 
+@router.get("/titles")
+async def get_plan_titles(
+    current_user: CurrentUser = Depends(get_current_user),
+    conn: asyncpg.Connection = Depends(get_db_connection),
+):
+    rows = await conn.fetch(
+        """
+        SELECT title
+        FROM plans
+        WHERE user_id = $1
+        ORDER BY created_at ASC
+        """,
+        current_user.id,
+    )
 
+    # ["My Plan", "My Plan 1", ...] 형태
+    titles = [r["title"] for r in rows]
+
+    return {
+        "titles": titles
+    }
 @router.patch("/{plan_id}", response_model=PlanOut)
 async def update_plan(
     plan_id: int,

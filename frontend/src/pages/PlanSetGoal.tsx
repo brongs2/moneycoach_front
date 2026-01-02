@@ -1,4 +1,4 @@
-// PlanSetGoal.tsx  (smooth 버전: 중복/따닥 방지 포함)
+// PlanSetGoal.tsx  (smooth 버전 + title 중복 방지 포함)
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import type { PlanGoalData } from '../types/plan'
 
@@ -6,22 +6,37 @@ import StatusBar from '../components/StatusBar'
 import ContentBlueButton from '../components/ContentBlueButton'
 import './PlanSetGoal.css'
 
+import { ensureToken } from '../utils/auth'
+import { fetchPlanTitles } from '../utils/planApi'
+
 interface PlanSetGoalProps {
   initialValue?: PlanGoalData
-  onNext?: (data: PlanGoalData) => void   // ✅ 핵심
+  onNext?: (data: PlanGoalData) => void
   onBack?: () => void
 }
 
-const AUTO_SCROLL_LOCK_MS = 220 // smooth 스크롤이 끝날 정도로만 "짧게" 잠금
+const AUTO_SCROLL_LOCK_MS = 220
+
+// ✅ 중복 없는 제목 만들기 ("제목", "제목 1", "제목 2"...)
+function generateUniqueTitle(baseTitle: string, existingTitles: string[]): string {
+  const base = (baseTitle ?? '').trim() || 'My Plan'
+  const normalized = new Set(existingTitles.map((t) => (t ?? '').trim()))
+  if (!normalized.has(base)) return base
+
+  let i = 1
+  while (normalized.has(`${base} ${i}`)) i += 1
+  return `${base} ${i}`
+}
 
 const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
+  // ✅ API는 vite proxy 기준
+  const API = '/api'
+
   const [title, setTitle] = useState(initialValue?.title ?? '')
   const [description, setDescription] = useState(initialValue?.description ?? '')
   const [age, setAge] = useState(initialValue?.age ? String(initialValue.age) : '')
   const [assetType, setAssetType] = useState(initialValue?.assetType ?? '')
-  const [multiplier, setMultiplier] = useState(
-    initialValue?.multiplier ? `${initialValue.multiplier}배` : ''
-  )
+  const [multiplier, setMultiplier] = useState(initialValue?.multiplier ? `${initialValue.multiplier}배` : '')
   const [action, setAction] = useState(initialValue?.action ?? '')
 
   const [showAssetDropdown, setShowAssetDropdown] = useState(false)
@@ -38,20 +53,60 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
   const isAssetTypeFilled = assetType !== ''
   const isMultiplierFilled = multiplier !== ''
   const isActionFilled = action !== ''
-  const isAllFilled = isTitleFilled && isDescriptionFilled && isAgeFilled && isAssetTypeFilled && isMultiplierFilled && isActionFilled
+  const isAllFilled =
+    isTitleFilled && isDescriptionFilled && isAgeFilled && isAssetTypeFilled && isMultiplierFilled && isActionFilled
 
   const formRef = useRef<HTMLDivElement>(null)
   const planContentRef = useRef<HTMLDivElement>(null)
   const actionDropdownRef = useRef<HTMLDivElement>(null)
 
-  // ✅ smooth 중 사용자 개입(클릭/호버 등)으로 인한 "따닥" 방지용 잠금
+  // ✅ smooth 중 사용자 개입으로 인한 "따닥" 방지 잠금
   const isAutoScrollingRef = useRef(false)
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false) // UI(pointerEvents) 제어용
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false)
 
   const setAutoScrolling = (v: boolean) => {
     isAutoScrollingRef.current = v
     setIsAutoScrolling(v)
   }
+
+  // ✅ titles 로딩 + title 자동 보정 (1회)
+  const didInitTitleRef = useRef(false)
+  useEffect(() => {
+    if (didInitTitleRef.current) return
+    didInitTitleRef.current = true
+
+    ;(async () => {
+      try {
+        const token = await ensureToken(API)
+
+        // ⚠️ fetchPlanTitles 시그니처에 따라 2줄 중 하나만 사용
+        const data = await fetchPlanTitles(API, token) // { titles: string[] }
+        // const data = await fetchPlanTitles(API)
+
+        const titles = data?.titles ?? []
+
+        // base title 우선순위:
+        // 1) initialValue.title (있으면 존중)
+        // 2) 없으면 기본 "My Plan"
+        const base = (initialValue?.title ?? 'My Plan').trim() || 'My Plan'
+
+        const unique = generateUniqueTitle(base, titles)
+
+        // 사용자가 이미 타이핑 중이면 덮어쓰지 않도록,
+        // 초기값이 비어있거나, 초기값과 같은 경우에만 자동 적용
+        setTitle((prev) => {
+          const prevTrim = (prev ?? '').trim()
+          if (!prevTrim) return unique
+          if (initialValue?.title && prevTrim === initialValue.title.trim()) return unique
+          return prev
+        })
+      } catch (e) {
+        console.error('fetchPlanTitles failed (PlanSetGoal)', e)
+        // 실패해도 UX 유지: title이 비어있으면 기본값만 채워줌
+        setTitle((prev) => (prev.trim() ? prev : (initialValue?.title ?? 'My Plan')))
+      }
+    })()
+  }, [API, initialValue?.title])
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -72,7 +127,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
     if (keep !== 'action') setShowActionDropdown(false)
   }
 
-  // ✅ "열릴 때 1회만" 스크롤 보정
+  // "열릴 때 1회만" 스크롤 보정
   const didAdjustRef = useRef(false)
   const unlockTimerRef = useRef<number | null>(null)
 
@@ -88,7 +143,6 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
   useLayoutEffect(() => {
     if (!showActionDropdown) {
       didAdjustRef.current = false
-      // 드롭다운 닫히면 잠금도 해제
       if (unlockTimerRef.current) {
         window.clearTimeout(unlockTimerRef.current)
         unlockTimerRef.current = null
@@ -101,7 +155,6 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
     if (didAdjustRef.current) return
     if (isAutoScrollingRef.current) return
 
-    // 렌더/레이아웃 확정 후 계산
     requestAnimationFrame(() => {
       const dropdown = actionDropdownRef.current
       const container = planContentRef.current
@@ -120,12 +173,11 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
       }
     })
   }, [showActionDropdown])
+
   const parseMultiplier = (text: string) => {
-    // '3배' -> 3
     const n = Number(String(text).replace(/[^\d.]/g, ''))
     return Number.isFinite(n) ? n : 0
   }
-
 
   const handleNext = () => {
     if (!isAllFilled) return
@@ -153,18 +205,15 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
     }
   }, [])
 
-  // ✅ 스크롤 중에는 휠/터치 스크롤도 막아서 "중첩 smooth"를 확실히 방지
+  // 스크롤 중 wheel/touch 막기
   useEffect(() => {
     const el = planContentRef.current
     if (!el) return
 
     const prevent = (e: Event) => {
-      if (isAutoScrollingRef.current) {
-        e.preventDefault()
-      }
+      if (isAutoScrollingRef.current) e.preventDefault()
     }
 
-    // passive: false 로 preventDefault 가능하게
     el.addEventListener('wheel', prevent, { passive: false })
     el.addEventListener('touchmove', prevent, { passive: false })
 
@@ -183,20 +232,13 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
 
         <div className="setup-back-button" onClick={onBack}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 18L9 12L15 6"
-              stroke="#333"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
 
         <div
           className="setup-content"
           ref={planContentRef}
-          // ✅ smooth 진행 중 클릭/호버로 레이아웃/포커스가 흔들리지 않게 잠깐 차단
           style={{ pointerEvents: isAutoScrolling ? 'none' : 'auto' }}
         >
           <div className="setup-top">
@@ -254,13 +296,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                     }}
                   />
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
-                    <path
-                      d="M6 9L12 15L18 9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
 
                   {showAssetDropdown && (
@@ -269,7 +305,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                         <div
                           key={option}
                           className="plan-dropdown-item"
-                          onMouseDown={(e) => e.preventDefault()} // ✅ 포커스/자동스크롤 방지
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             setAssetType(option)
                             setShowAssetDropdown(false)
@@ -303,13 +339,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                     }}
                   />
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
-                    <path
-                      d="M6 9L12 15L18 9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
 
                   {showMultiplierDropdown && (
@@ -318,7 +348,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                         <div
                           key={option}
                           className="plan-dropdown-item"
-                          onMouseDown={(e) => e.preventDefault()} // ✅ 포커스/자동스크롤 방지
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             setMultiplier(option)
                             setShowMultiplierDropdown(false)
@@ -353,13 +383,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                     }}
                   />
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="plan-chevron">
-                    <path
-                      d="M6 9L12 15L18 9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
 
                   {showActionDropdown && (
@@ -368,7 +392,7 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                         <div
                           key={option}
                           className="plan-dropdown-item"
-                          onMouseDown={(e) => e.preventDefault()} // ✅ 따닥 방지 핵심
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             setAction(option)
                             setShowActionDropdown(false)
