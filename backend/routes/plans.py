@@ -24,7 +24,8 @@ from backend.schemas.simulation import SimulationRequest, SimulationDefault
 from backend.simulation import run_simulation, get_yearly_summary
 from backend.snapshot import load_user_snapshot
 from backend.auth import get_current_user, CurrentUser  # 가정
-
+import logging
+logger = logging.getLogger("uvicorn.error")
 router = APIRouter(prefix="/plans", tags=["plans"])
 
 templates = Jinja2Templates(directory="backend/templates")
@@ -135,10 +136,10 @@ async def create_plan(
     roi = getattr(payload, "roi", None)
     dividend = getattr(payload, "dividend", None)
     inflation = getattr(payload, "inflation", None)
-
+    expected_death_year = getattr(payload, "expected_death_year", None)
     # ✅ 추가: interest_rate (payload에 없을 수도 있으니 안전하게)
     interest_rate = getattr(payload, "interest_rate", None)
-
+    logger.info(f"expected_death_year = {expected_death_year}")
     # ✅ lifestyle → priority 변환
     priority_obj = lifestyle_to_priority(payload.lifestyle)
 
@@ -146,11 +147,11 @@ async def create_plan(
         row = await conn.fetchrow(
             """
             INSERT INTO plans
-                (user_id, title, roi, dividend, inflation, interest_rate, description, priority)
+                (user_id, title, roi, dividend, inflation, interest_rate, description, priority, expected_death_year)
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING id, user_id, title, roi, dividend, inflation, interest_rate,
-                      description, priority, created_at, updated_at
+                    description, priority, expected_death_year, created_at, updated_at
             """,
             current_user.id,
             title,
@@ -159,7 +160,8 @@ async def create_plan(
             inflation,
             interest_rate,
             description,
-            json.dumps(priority_obj),
+            json.dumps(priority_obj),   # $8
+            expected_death_year,        # $9
         )
 
     if row["priority"]:
@@ -241,7 +243,6 @@ async def get_plan_details(
         ),
         extra_monthly_spend=0.0,
         priority=plan_priority,
-        retirement_year=plan["retirement_year"],
         expected_death_year=plan["expected_death_year"]
     )
     sim_result = run_simulation(snapshot, sim_req, start_date=date.today())

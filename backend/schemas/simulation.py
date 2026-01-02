@@ -22,7 +22,6 @@ class SimulationRequest(BaseModel):
     
     extra_monthly_spend: float = 0.0
     savings_rate: float = 0.3         # 필요 시 추가
-    retirement_year: int
     expected_death_year: int
     priority: Optional[PlanPriority] = None
 

@@ -208,7 +208,7 @@ def run_simulation(snapshot: dict, req: SimulationRequest, start_date: date) -> 
         this_month_income = 0.0
         for rev in processed_revenues:
             if rev["start"] <= current_date <= rev["end"]:
-                if rev["category"] == "INCOME" and current_date.year >= req.retirement_year:
+                if rev["category"] == "INCOME":
                     continue
                 this_month_income += rev["monthly_amt"]
         # ✅ 2-1. 세금 계산 (INCOME_TAX 반영)

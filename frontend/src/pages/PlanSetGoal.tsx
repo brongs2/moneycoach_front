@@ -227,12 +227,12 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
                   <input
                     type="text"
                     className={`plan-input ${isAgeFilled ? 'filled' : ''}`}
-                    placeholder="00"
+                    placeholder="2025"
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
                   />
                 </div>
-                <span className="plan-label">세까지</span>
+                <span className="plan-label">년까지</span>
               </div>
 
               {/* asset */}

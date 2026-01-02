@@ -17,6 +17,7 @@ import PlanTaxRate from './pages/PlanTaxRate'
 import PlanLifestyle from './pages/PlanLifestyle'
 import PlanPage from './pages/PlanPage'
 import './App.css'
+import { ensureToken } from './utils/auth'
 // api/plans.ts
 import type { PlanDetailResponse } from './types/plan'
 
@@ -616,22 +617,7 @@ export default App
 // Helpers (App 밖으로 분리)
 // =====================
 
-const TOKEN_KEY = "mc_token";
 
-async function ensureToken(API: string): Promise<string> {
-  let token = sessionStorage.getItem(TOKEN_KEY);
-
-  if (!token) {
-    const res = await fetch(`${API}/auth/anon`, { method: "POST" });
-    if (!res.ok) throw new Error(`anon failed: ${res.status}`);
-
-    const data = await res.json();
-    token = data.access_token as string;
-    sessionStorage.setItem(TOKEN_KEY, token);
-  }
-
-  return token; // 여기선 string으로 확정됨
-}
 
 
 async function fetchJson(url: string, API: string) {
@@ -821,6 +807,7 @@ const WON_PER_MAN = 10_000
 
 function buildPlanBody(planState: any) {
   const goal = planState.goal
+  console.log(goal)
   const simulationInfo = planState.simulationInfo
   const payLoad = {
     title: goal?.title ?? (goal ? `${goal.assetType} ${goal.multiplier}배 ${goal.action}` : 'My Plan'),
@@ -829,7 +816,7 @@ function buildPlanBody(planState: any) {
     dividend: simulationInfo?.interestRate ?? 0,
     inflation: simulationInfo?.inflation ?? 0,
     retirement_year: 0,
-    expected_death_year: 0,
+    expected_death_year: goal?.age ?? 0,
     lifestyle: planState.lifestyle?.preferences ?? [],
   }
   console.log('buildPlanBody payload:', payLoad)
