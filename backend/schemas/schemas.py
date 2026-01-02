@@ -264,6 +264,7 @@ class TaxOut(BaseModel):
 class PlanCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    interest_rate: Optional[float] = None
     roi: Optional[float] = None
     dividend: Optional[float] = None
     inflation: Optional[float] = None
@@ -276,6 +277,7 @@ class PlanUpdate(BaseModel):
     description: Optional[str] = None
     retirement_year: Optional[int] = None       # 필수 해제
     expected_death_year: Optional[int] = None   # 필수 해제
+    interest_rate: Optional[float] = None
     roi: Optional[float] = None
     dividend: Optional[float] = None
     inflation: Optional[float] = None
@@ -288,6 +290,7 @@ class PlanOut(BaseModel):
     description: Optional[str] = None
     retirement_year: int | None = None
     expected_death_year: int | None = None
+    interest_rate: Optional[float] = None
     roi: Optional[float] = None
     dividend: Optional[float] = None
     inflation: Optional[float] = None
