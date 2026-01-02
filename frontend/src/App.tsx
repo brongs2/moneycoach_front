@@ -72,7 +72,7 @@ function App() {
   const [assetData, setAssetData] = useState<Record<string, any>>({})
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<string | null>(null)
   const [lastSetupPage, setLastSetupPage] = useState<Page | null>(null)
-
+  const [hasVisitedMyAssetPage, setHasVisitedMyAssetPage] = useState(false)
   const [planState, setPlanState] = useState<PlanState>({})
   const [planId, setPlanId] = useState<number | undefined>(undefined)
 

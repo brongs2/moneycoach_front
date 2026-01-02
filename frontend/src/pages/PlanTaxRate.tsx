@@ -54,11 +54,13 @@ const PlanTaxRate = ({ initialValue, onNext, onBack }: PlanTaxRateProps) => {
   }
 
   const handleNext = () => {
-    const normalized = normalizeItems()
-    if (normalized.length > 0) {
-      onNext?.({ items: normalized })
-    }
+    const normalized = items.map(it => ({
+      taxCategory: it.taxCategory,
+      taxRate: Number(it.taxRate ?? 0),
+    }))
+    onNext?.({ items: normalized })
   }
+
   useEffect(() => {
     const checkSpacing = () => {
       if (formRef.current) {
@@ -178,7 +180,6 @@ const PlanTaxRate = ({ initialValue, onNext, onBack }: PlanTaxRateProps) => {
             <ContentBlueButton
               label="다음"
               onClick={handleNext}
-              disabled={!isAllFilled}
             />
           </div>
         </div>

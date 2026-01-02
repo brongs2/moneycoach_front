@@ -158,7 +158,6 @@ const PlanIncome = ({ initialValue, onNext, onBack }: PlanIncomeProps) => {
             <ContentBlueButton 
               label="다음" 
               onClick={handleNext}
-              disabled={!isAllFilled}
             />
           </div>
         </div>

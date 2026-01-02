@@ -149,7 +149,6 @@ const PlanOutcome = ({ initialValue, onNext, onBack }: PlanOutcomeProps) => {
             <ContentBlueButton
               label="다음"
               onClick={handleNext}
-              disabled={!isAllFilled}
             />
           </div>
         </div>

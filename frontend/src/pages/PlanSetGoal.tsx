@@ -48,13 +48,12 @@ const PlanSetGoal = ({ initialValue, onNext, onBack }: PlanSetGoalProps) => {
   const actionOptions = ['확장 시키겠습니다', '유지하겠습니다', '감소시키겠습니다']
 
   const isTitleFilled = title.trim() !== ''
-  const isDescriptionFilled = description.trim() !== ''
   const isAgeFilled = age !== ''
   const isAssetTypeFilled = assetType !== ''
   const isMultiplierFilled = multiplier !== ''
   const isActionFilled = action !== ''
   const isAllFilled =
-    isTitleFilled && isDescriptionFilled && isAgeFilled && isAssetTypeFilled && isMultiplierFilled && isActionFilled
+    isTitleFilled && isAgeFilled && isAssetTypeFilled && isMultiplierFilled && isActionFilled
 
   const formRef = useRef<HTMLDivElement>(null)
   const planContentRef = useRef<HTMLDivElement>(null)
