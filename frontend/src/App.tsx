@@ -821,17 +821,18 @@ const WON_PER_MAN = 10_000
 
 function buildPlanBody(planState: any) {
   const goal = planState.goal
+  const simulationInfo = planState.simulationInfo
   const payLoad = {
-    title: goal ? `${goal.assetType} ${goal.multiplier}배 ${goal.action}` : 'My Plan',
-    description: goal ? `${goal.age}세까지 ${goal.assetType}을(를) ${goal.multiplier}배로 ${goal.action}` : '',
-    roi: 0,
-    dividend: 0,
-    inflation: 0,
+    title: goal?.title ?? (goal ? `${goal.assetType} ${goal.multiplier}배 ${goal.action}` : 'My Plan'),
+    description: goal?.description ?? (goal ? `${goal.age}세까지 ${goal.assetType}을(를) ${goal.multiplier}배로 ${goal.action}` : ''),
+    roi: simulationInfo?.investmentReturn ?? 0,
+    dividend: simulationInfo?.interestRate ?? 0,
+    inflation: simulationInfo?.inflation ?? 0,
     retirement_year: 0,
     expected_death_year: 0,
     lifestyle: planState.lifestyle?.preferences ?? [],
   }
-  console.log(payLoad)
+  console.log('buildPlanBody payload:', payLoad)
   return payLoad
 }
 
