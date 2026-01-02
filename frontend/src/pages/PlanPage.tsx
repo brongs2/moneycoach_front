@@ -13,9 +13,10 @@ interface PlanPageProps {
   API?: string
   onEditPlan?: () => void
   onBack?: () => void
+  onNavigate?: (target: 'home' | 'asset' | 'plan' | 'settings') => void
 }
 
-const PlanPage = ({ planState, planId, API = '/api', onEditPlan, onBack }: PlanPageProps) => {
+const PlanPage = ({ planState, planId, API = '/api', onEditPlan, onBack, onNavigate }: PlanPageProps) => {
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
   const [planDetail, setPlanDetail] = useState<PlanDetailResponse | null>(null)
   const [planLoading, setPlanLoading] = useState(false)
@@ -59,7 +60,7 @@ const PlanPage = ({ planState, planId, API = '/api', onEditPlan, onBack }: PlanP
   const getPlanDescription = () => {
     if (!planState.goal) return '2032년까지 1달에 300만원 투자하면'
     
-    const { age, assetType, multiplier, action } = planState.goal
+    const { age, assetType } = planState.goal
     const ageStr = age ? `${age}세까지` : '2032년까지'
     
     return `${ageStr} 1달에 300만원 ${assetType || '투자'}하면`
@@ -160,7 +161,7 @@ const PlanPage = ({ planState, planId, API = '/api', onEditPlan, onBack }: PlanP
         </div>
 
         <div className="plan-page-navigation">
-          <NavigationBar activeItem="plan" />
+          <NavigationBar activeItem="plan" onNavigate={onNavigate} />
         </div>
       </div>
     </div>

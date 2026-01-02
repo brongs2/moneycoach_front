@@ -14,6 +14,7 @@ interface MyAssetPageProps {
   onGoToMain: () => void
   onBack?: () => void
   hasUnfilledAssets?: boolean
+  onNavigate?: (target: 'home' | 'asset' | 'plan' | 'settings') => void
   hasVisitedMyAssetPage?: boolean
   currentStep?: number
   totalSteps?: number
@@ -26,7 +27,19 @@ const assetCategoryMap: Record<string, { title: string; description: string; ico
   debt: { title: '부채', description: '학자금 대출, 신용 대출 등 부채', icon: <DebtIcon selected={false} /> },
 }
 
-const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, onGoToMain, onBack, hasUnfilledAssets, hasVisitedMyAssetPage = false, currentStep = 5, totalSteps = 5 }: MyAssetPageProps) => {
+const MyAssetPage = ({
+  selectedAssets,
+  assetData,
+  onInputClick,
+  onAssetClick,
+  onGoToMain,
+  onBack,
+  hasUnfilledAssets,
+  onNavigate,
+  hasVisitedMyAssetPage = false,
+  currentStep = 5,
+  totalSteps = 5,
+}: MyAssetPageProps) => {
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
 
   // 총 자산 계산 (debt는 음수로 처리)
@@ -244,7 +257,7 @@ const MyAssetPage = ({ selectedAssets, assetData, onInputClick, onAssetClick, on
           )}
         </div>
 
-        <NavigationBar />
+            <NavigationBar activeItem="asset" onNavigate={onNavigate} />
       </div>
     </div>
   )

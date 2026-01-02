@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import type { PlanState, PlanDetailResponse } from '../types/plan'
+import type { PlanDetailResponse } from '../types/plan'
 import { fetchPlanDetail } from '../utils/planApi'
 import StatusBar from '../components/StatusBar'
 import ContentBlueButton from '../components/ContentBlueButton'
@@ -10,13 +10,13 @@ import './MainPage.css'
 
 interface MainPageProps {
   assetData: Record<string, any>
-  planState?: PlanState
   planId?: number
   onPlanClick?: () => void
+  onNavigate?: (target: 'home' | 'asset' | 'plan' | 'settings') => void
   API?: string
 }
 
-const MainPage = ({ assetData, planState, planId, onPlanClick, API = '/api' }: MainPageProps) => {  
+const MainPage = ({ assetData, planId, onPlanClick, onNavigate, API = '/api' }: MainPageProps) => {  
   const [userName] = useState('000') // TODO: 실제 사용자 이름으로 교체
   const [planDetail, setPlanDetail] = useState<PlanDetailResponse | null>(null)
   const [planLoading, setPlanLoading] = useState(false)
@@ -329,7 +329,7 @@ const MainPage = ({ assetData, planState, planId, onPlanClick, API = '/api' }: M
           />
         </div>
 
-        <NavigationBar activeItem="home" />
+        <NavigationBar activeItem="home" onNavigate={onNavigate} />
       </div>
     </div>
   )
